@@ -54,7 +54,7 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
         <Line
           type="monotone"
           dataKey="receitas"
-          stroke="#00C49F"
+          stroke="#009689"
           strokeWidth={2}
           name="Receitas"
           dot={{ r: 4 }}
@@ -62,7 +62,7 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
         <Line
           type="monotone"
           dataKey="despesas"
-          stroke="#FF8042"
+          stroke="#e7000b"
           strokeWidth={2}
           name="Despesas"
           dot={{ r: 4 }}

@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 type CategoryFormData = z.infer<typeof createCategorySchema>;
 
@@ -39,15 +40,34 @@ export function CategoryForm({ open, onOpenChange, category }: CategoryFormProps
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    watch,
+    setValue,
   } = useForm<CategoryFormData>({
     resolver: zodResolver(createCategorySchema),
-    defaultValues: category
-      ? {
-          name: category.name,
-          color: category.color || undefined,
-        }
-      : {},
+    defaultValues: {
+      name: '',
+      color: '#3b82f6',
+    },
   });
+
+  // Update form when category changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      if (category) {
+        reset({
+          name: category.name,
+          color: category.color || '#3b82f6',
+        });
+      } else {
+        reset({
+          name: '',
+          color: '#3b82f6',
+        });
+      }
+    }
+  }, [category, open, reset]);
+
+  const colorValue = watch('color');
 
   const onSubmit = async (data: CategoryFormData) => {
     try {
@@ -94,19 +114,25 @@ export function CategoryForm({ open, onOpenChange, category }: CategoryFormProps
 
           <div className="space-y-2">
             <Label htmlFor="color">Cor (opcional)</Label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <Input
                 id="color"
                 type="color"
-                className="h-10 w-20"
-                {...register('color')}
+                className="h-10 w-20 cursor-pointer"
+                value={colorValue || '#3b82f6'}
+                onChange={(e) => setValue('color', e.target.value)}
               />
               <Input
                 type="text"
-                placeholder="#000000"
-                {...register('color')}
+                placeholder="#3b82f6"
+                value={colorValue || ''}
+                onChange={(e) => setValue('color', e.target.value)}
+                className="flex-1"
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              Escolha uma cor para identificar facilmente esta categoria
+            </p>
             {errors.color && <p className="text-sm text-red-600">{errors.color.message}</p>}
           </div>
 

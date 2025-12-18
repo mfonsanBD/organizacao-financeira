@@ -1,15 +1,14 @@
 import { listIncomes } from '@/features/income/actions';
 import { listExpenses, listCategories } from '@/features/expense/actions';
-import { getBudgetWithSpending } from '@/features/budget/actions';
-import { getReceivablesSummary, listReceivables } from '@/features/receivable/actions';
+import { getMonthlyTrend, getMonthComparison } from '@/features/dashboard/actions';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExpensesByCategoryChart } from '@/components/charts/ExpensesByCategoryChart';
 import { MonthlyTrendChart } from '@/components/charts/MonthlyTrendChart';
-import { PendingReceivablesList } from '@/components/dashboard/PendingReceivablesList';
-import { BudgetAlerts } from '@/components/dashboard/BudgetAlerts';
+import { Button } from '@/components/ui/button';
+import { LayoutDashboard, PiggyBank, TrendingDown, TrendingUp } from 'lucide-react';
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -23,17 +22,16 @@ export default async function DashboardPage() {
   const currentYear = now.getFullYear();
 
   // Fetch all data in parallel
-  const [incomesResult, expensesResult, budgetsResult, receivablesResult, categoriesResult, allReceivablesResult] =
+  const [incomesResult, expensesResult, categoriesResult, monthlyTrendResult, monthComparisonResult] =
     await Promise.all([
       listIncomes(),
       listExpenses({
         startDate: new Date(currentYear, currentMonth - 1, 1),
         endDate: new Date(currentYear, currentMonth, 0, 23, 59, 59),
       }),
-      getBudgetWithSpending(currentMonth, currentYear),
-      getReceivablesSummary(),
       listCategories(),
-      listReceivables(),
+      getMonthlyTrend(6),
+      getMonthComparison(),
     ]);
 
   // Calculate totals
@@ -42,271 +40,171 @@ export default async function DashboardPage() {
 
   const totalExpenses = expensesResult.data?.reduce((sum, e) => sum + e.amount, 0) || 0;
 
-  const totalBudget = budgetsResult.data?.reduce((sum, b) => sum + b.amount, 0) || 0;
-
-  const totalPendingReceivables = receivablesResult.data?.pending.amount || 0;
-
   const balance = totalIncome - totalExpenses;
 
-  // Prepare monthly trend data (last 6 months)
-  const monthlyTrendData = [];
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date(currentYear, currentMonth - 1 - i, 1);
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-    
-    monthlyTrendData.push({
-      month: date.toLocaleDateString('pt-BR', { month: 'short' }),
-      receitas: totalIncome, // Simplificado - na prática você buscaria dados históricos
-      despesas: totalExpenses * (0.7 + Math.random() * 0.6), // Simulado
-    });
-  }
+  // Get real month comparison data
+  const balanceChangePercentage = monthComparisonResult.data?.changes.balance || 0;
 
-  // Prepare budget alerts (>80% ou excedido)
-  const budgetAlerts = budgetsResult.data
-    ?.filter((b) => b.percentage >= 80)
-    .map((b) => ({
-      id: b.id,
-      categoryName: b.category.name,
-      categoryColor: b.category.color || '#666',
-      spent: b.spent,
-      limit: b.amount,
-      percentage: b.percentage,
-    })) || [];
-
-  // Pending receivables
-  const pendingReceivables = allReceivablesResult.data
-    ?.filter((r) => !r.isReceived)
-    .map((r) => ({
-      id: r.id,
-      description: r.description,
-      amount: r.amount,
-      expectedDate: r.expectedDate,
-    })) || [];
+  // Prepare monthly trend data from real database
+  const monthlyTrendData = monthlyTrendResult.data || [];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 lg:p-8 space-y-6 max-w-400 mx-auto">
+      {/* Header */}
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Olá, {session.user.name}! Aqui está o resumo financeiro.
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+            Dashboard
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Olá, {session.user.name}! Aqui está seu resumo financeiro.
           </p>
         </div>
-        <div className="text-right text-sm text-muted-foreground">
-          <p>
-            {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-          </p>
-          <p className="text-xs">Role: {session.user.role}</p>
+        <div className="flex items-center gap-3">
+          <div className="px-3 py-1.5 bg-white rounded-lg border border-gray-200">
+            <p className="text-xs font-medium text-gray-600">
+              {new Date().toLocaleDateString('pt-BR', { 
+                month: 'long', 
+                year: 'numeric' 
+              }).replace(/^\w/, c => c.toUpperCase())}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Renda Mensal</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-green-600"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              }).format(totalIncome)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {incomesResult.data?.filter((i) => i.isActive).length || 0} fontes ativas
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Despesas do Mês</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-red-600"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              }).format(totalExpenses)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {expensesResult.data?.length || 0} transações
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className={`h-4 w-4 ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}
-            >
-              <line x1="12" x2="12" y1="2" y2="22" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}
-            >
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              }).format(balance)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {balance >= 0 ? 'Positivo' : 'Negativo'} este mês
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">A Receber</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-blue-600"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              }).format(totalPendingReceivables)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {receivablesResult.data?.pending.count || 0} pendentes
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Budget Overview */}
-      {budgetsResult.data && budgetsResult.data.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Orçamento vs Gastos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {budgetsResult.data.map((budget) => {
-                const percentageUsed = Math.min(budget.percentage, 100);
-                const isOverBudget = budget.percentage > 100;
-
-                return (
-                  <div key={budget.id}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {budget.category.color && (
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: budget.category.color }}
-                          />
-                        )}
-                        <span className="font-medium">{budget.category.name}</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        }).format(budget.spent)}{' '}
-                        /{' '}
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        }).format(budget.amount)}
-                      </div>
-                    </div>
-                    <div className="w-full bg-secondary rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all ${
-                          isOverBudget ? 'bg-red-600' : 'bg-green-600'
-                        }`}
-                        style={{ width: `${Math.min(percentageUsed, 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs text-muted-foreground">
-                        {percentageUsed.toFixed(1)}% utilizado
+      {/* Main Balance Card - Sequence Style */}
+      <Card className="bg-linear-to-br from-teal-700 to-teal-800 border-0 rounded-2xl overflow-hidden">
+        <CardContent className="p-6 lg:p-8">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-teal-200 text-sm font-medium mb-3">Saldo Total</p>
+                <h2 className="text-4xl lg:text-5xl font-bold text-white mb-2">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  }).format(balance)}
+                </h2>
+                <p className="text-sm font-medium">
+                  {balance >= 0 ? (
+                    <span className="inline-flex items-center gap-1 text-teal-300">
+                      <span>
+                        {balanceChangePercentage >= 0 ? '↗' : '↘'} {Math.abs(balanceChangePercentage).toFixed(2)}%
                       </span>
-                      {isOverBudget && (
-                        <span className="text-xs text-red-600 font-medium">
-                          Excedido em{' '}
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          }).format(Math.abs(budget.remaining))}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-red-300">
+                      <span>↘ Déficit</span>
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                size="sm" 
+                className="bg-teal-500 text-white hover:bg-teal-600 font-semibold px-4 py-2 rounded-lg border-0"
+              >
+                Adicionar
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white font-medium px-4 py-2 rounded-lg backdrop-blur-sm"
+              >
+                Enviar
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white font-medium px-4 py-2 rounded-lg backdrop-blur-sm"
+              >
+                Solicitar
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary Cards - Sequence Style */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="bg-white border border-gray-100 transition-all rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2.5 bg-teal-100 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-teal-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-500 mb-1">Receitas</p>
+                <div className="text-2xl font-bold text-gray-900 truncate">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  }).format(totalIncome)}
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-teal-600 font-medium">
+              ↗ {incomesResult.data?.filter((i) => i.isActive).length || 0} fontes ativas
+            </p>
           </CardContent>
         </Card>
-      )}
 
-      {/* Budget Alerts */}
-      <BudgetAlerts alerts={budgetAlerts} />
+        <Card className="bg-white border border-gray-100 transition-all rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2.5 bg-red-100 rounded-lg">
+                <TrendingDown className="h-5 w-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-500 mb-1">Despesas</p>
+                <div className="text-2xl font-bold text-gray-900 truncate">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  }).format(totalExpenses)}
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-red-600 font-medium">
+              ↘ {expensesResult.data?.length || 0} transações
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border border-gray-100 transition-all rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <div className={`p-2.5 rounded-lg ${balance >= 0 ? 'bg-teal-100' : 'bg-amber-100'}`}>
+                <PiggyBank className={`h-5 w-5 ${balance >= 0 ? 'text-teal-600' : 'text-amber-600'}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-500 mb-1">Saldo</p>
+                <div className={`text-2xl font-bold truncate ${balance >= 0 ? 'text-teal-600' : 'text-amber-600'}`}>
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  }).format(balance)}
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 font-medium">
+              {balance >= 0 ? '↗ Positivo' : '↘ Negativo'} este mês
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Monthly Trend Chart */}
       <MonthlyTrendChart data={monthlyTrendData} />
 
-      {/* Pending Receivables */}
-      <PendingReceivablesList receivables={pendingReceivables} />
-
       {/* Gráfico de Despesas por Categoria */}
       {expensesResult.data && expensesResult.data.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Despesas por Categoria</CardTitle>
+        <Card className="bg-white border border-gray-100 rounded-xl">
+          <CardHeader className="border-b border-gray-100 pb-4">
+            <CardTitle className="text-lg font-semibold text-gray-900">Despesas por Categoria</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <ExpensesByCategoryChart
               data={
                 categoriesResult.data?.map((cat) => {
@@ -326,80 +224,33 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      {/* Orçamento total */}
-      {totalBudget > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo de Orçamento</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Orçamento Total:</span>
-                <span className="font-medium">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(totalBudget)}
-                </span>
+      {/* Empty state - Sequence Style */}
+      {!incomesResult.data?.length && !expensesResult.data?.length && (
+          <Card className="bg-white border border-gray-100 rounded-xl p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <LayoutDashboard className="h-10 w-10 text-gray-300" />
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Gasto Total:</span>
-                <span className="font-medium">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(totalExpenses)}
-                </span>
-              </div>
-              <div className="flex justify-between pt-2 border-t">
-                <span className="font-medium">Restante:</span>
-                <span
-                  className={`font-bold ${
-                    totalBudget - totalExpenses >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Nenhum dado financeiro
+              </h3>
+              <p className="text-sm text-gray-500 mb-8">
+                Comece adicionando suas receitas e despesas para visualizar seu dashboard!
+              </p>
+              <div className="flex gap-3 justify-center flex-wrap">
+                <a
+                  href="/income"
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-linear-to-r from-teal-600 to-teal-600 rounded-lg hover:from-teal-700 hover:to-teal-700 transition-all"
                 >
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(totalBudget - totalExpenses)}
-                </span>
+                  Adicionar Receita
+                </a>
+                <a
+                  href="/expense"
+                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                >
+                  Adicionar Despesa
+                </a>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Empty state */}
-      {!incomesResult.data?.length &&
-        !expensesResult.data?.length &&
-        !budgetsResult.data?.length && (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground mb-4">
-              Nenhum dado financeiro encontrado. Comece adicionando suas rendas, despesas e
-              orçamentos!
-            </p>
-            <div className="flex gap-2 justify-center flex-wrap">
-              <a
-                href="/income"
-                className="text-sm text-primary hover:underline"
-              >
-                Adicionar Renda
-              </a>
-              <span className="text-muted-foreground">•</span>
-              <a
-                href="/expense"
-                className="text-sm text-primary hover:underline"
-              >
-                Adicionar Despesa
-              </a>
-              <span className="text-muted-foreground">•</span>
-              <a
-                href="/budget"
-                className="text-sm text-primary hover:underline"
-              >
-                Criar Orçamento
-              </a>
             </div>
           </Card>
         )}

@@ -88,7 +88,7 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
 
   const onSubmit = async (data: ExpenseFormData) => {
     try {
-      const result = expense
+      const result = expense?.id
         ? await updateExpense(expense.id, data)
         : await createExpense(data);
 
@@ -115,7 +115,7 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
           <DialogDescription>
             {expense
               ? 'Atualize as informações da despesa.'
-              : 'Registre uma nova despesa.'}
+              : 'Registre uma nova despesa ou conta fixa.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -179,41 +179,46 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
             )}
           </div>
 
-          <div className="flex items-center space-x-2">
-            <input
-              id="isRecurring"
-              type="checkbox"
-              className="rounded border-gray-300"
-              {...register('isRecurring')}
-            />
-            <Label htmlFor="isRecurring" className="font-normal cursor-pointer">
-              Despesa recorrente
-            </Label>
-          </div>
-
-          {isRecurring && (
-            <div className="space-y-2">
-              <Label htmlFor="recurrence">Recorrência</Label>
-              <Select
-                onValueChange={(value) =>
-                  setValue('recurrence', value as 'MONTHLY' | 'YEARLY' | 'CUSTOM')
-                }
-                defaultValue={expense?.recurrence || undefined}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a recorrência" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MONTHLY">Mensal</SelectItem>
-                  <SelectItem value="YEARLY">Anual</SelectItem>
-                  <SelectItem value="CUSTOM">Personalizado</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.recurrence && (
-                <p className="text-sm text-red-600">{errors.recurrence.message}</p>
-              )}
+          <div className="space-y-3 p-4 border rounded-lg bg-blue-50/50">
+            <div className="flex items-center space-x-2">
+              <input
+                id="isRecurring"
+                type="checkbox"
+                className="rounded border-gray-300 w-4 h-4"
+                {...register('isRecurring')}
+              />
+              <Label htmlFor="isRecurring" className="font-medium cursor-pointer">
+                É uma despesa recorrente?
+              </Label>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground ml-6">
+              Marque para despesas que se repetem regularmente (ex: luz, água, internet, aluguel). O valor pode variar a cada mês.
+            </p>
+
+            {isRecurring && (
+              <div className="space-y-2 ml-6 mt-3">
+                <Label htmlFor="recurrence">Frequência</Label>
+                <Select
+                  onValueChange={(value) =>
+                    setValue('recurrence', value as 'MONTHLY' | 'YEARLY' | 'CUSTOM')
+                  }
+                  defaultValue={expense?.recurrence || undefined}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a frequência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MONTHLY">Mensal</SelectItem>
+                    <SelectItem value="YEARLY">Anual</SelectItem>
+                    <SelectItem value="CUSTOM">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.recurrence && (
+                  <p className="text-sm text-red-600">{errors.recurrence.message}</p>
+                )}
+              </div>
+            )}
+          </div>
 
           <DialogFooter>
             <Button

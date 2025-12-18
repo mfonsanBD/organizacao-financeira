@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 type IncomeFormData = z.infer<typeof createIncomeSchema>;
 
@@ -43,17 +44,34 @@ export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
     reset,
   } = useForm({
     resolver: zodResolver(createIncomeSchema),
-    defaultValues: income
-      ? {
+    defaultValues: {
+      description: '',
+      amount: 0,
+      dueDate: 1,
+      isActive: true,
+    },
+  });
+
+  // Update form when income changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      if (income) {
+        reset({
           description: income.description,
           amount: income.amount,
           dueDate: income.dueDate,
           isActive: income.isActive,
-        }
-      : {
+        });
+      } else {
+        reset({
+          description: '',
+          amount: 0,
+          dueDate: 1,
           isActive: true,
-        },
-  });
+        });
+      }
+    }
+  }, [income, open, reset]);
 
   const onSubmit = async (data: IncomeFormData) => {
     try {
@@ -113,7 +131,7 @@ export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="dueDate">Dia do Vencimento</Label>
+            <Label htmlFor="dueDate">Dia do Recebimento</Label>
             <Input
               id="dueDate"
               type="number"

@@ -70,20 +70,27 @@ async function syncEntities(entityType: string, entities: unknown[]) {
  * Pull latest data from backend
  * Used for conflict resolution based on updatedAt
  */
-export async function pullFromBackend(familyId: string) {
+export async function pullFromBackend() {
   try {
     if (!navigator.onLine) {
       console.log('Offline - pull postponed');
       return;
     }
 
-    const response = await fetch(`/api/sync?familyId=${familyId}`);
+    const response = await fetch('/api/sync');
     
     if (!response.ok) {
-      throw new Error('Failed to pull data from backend');
+      console.error('Failed to pull data from backend:', response.status);
+      return; // Don't throw - sync is non-critical
     }
 
     const data = await response.json();
+
+    // Check for error response
+    if (data.error) {
+      console.error('Sync error:', data.error);
+      return;
+    }
 
     // Update local DB with latest data, resolving conflicts by updatedAt
     await resolveConflictsAndUpdate(data);
@@ -91,7 +98,7 @@ export async function pullFromBackend(familyId: string) {
     console.log('Pull completed successfully');
   } catch (error) {
     console.error('Pull failed:', error);
-    throw error;
+    // Don't throw - sync is non-critical
   }
 }
 
@@ -99,44 +106,92 @@ export async function pullFromBackend(familyId: string) {
  * Resolve conflicts based on updatedAt timestamp
  * Server data wins if it's newer
  */
-async function resolveConflictsAndUpdate(serverData: Record<string, unknown[]>) {
-  for (const [table, records] of Object.entries(serverData)) {
-    const typedRecords = records as Array<Record<string, unknown> & { id: string; updatedAt: string }>;
-    for (const record of typedRecords) {
-      const localRecord = await ((db as unknown) as Record<string, { get: (id: string) => Promise<Record<string, unknown> & { updatedAt: Date; synced: boolean } | undefined> }>)[table].get(record.id);
+async function resolveConflictsAndUpdate(serverData: {
+  incomes?: Array<Record<string, unknown> & { id: string; updatedAt: string | Date }>;
+  expenses?: Array<Record<string, unknown> & { id: string; updatedAt: string | Date }>;
+  categories?: Array<Record<string, unknown> & { id: string; updatedAt: string | Date }>;
+  budgets?: Array<Record<string, unknown> & { id: string; updatedAt: string | Date }>;
+  receivables?: Array<Record<string, unknown> & { id: string; updatedAt: string | Date }>;
+}) {
+  // Handle each table separately to maintain type safety
+  if (serverData.incomes) {
+    for (const record of serverData.incomes) {
+      await syncRecord(db.incomes, record, 'incomes');
+    }
+  }
 
-      if (!localRecord) {
-        // New record from server
-        await ((db as unknown) as Record<string, { add: (data: unknown) => Promise<unknown> }>)[table].add({ ...record, synced: true });
+  if (serverData.expenses) {
+    for (const record of serverData.expenses) {
+      await syncRecord(db.expenses, record, 'expenses');
+    }
+  }
+
+  if (serverData.categories) {
+    for (const record of serverData.categories) {
+      await syncRecord(db.categories, record, 'categories');
+    }
+  }
+
+  if (serverData.budgets) {
+    for (const record of serverData.budgets) {
+      await syncRecord(db.budgets, record, 'budgets');
+    }
+  }
+
+  if (serverData.receivables) {
+    for (const record of serverData.receivables) {
+      await syncRecord(db.receivables, record, 'receivables');
+    }
+  }
+  
+  console.log('Conflict resolution completed');
+}
+
+/**
+ * Sync a single record with conflict resolution
+ */
+async function syncRecord<T extends { id: string; updatedAt: Date; synced: boolean }>(
+  table: { get: (id: string) => Promise<T | undefined>; add: (item: T) => Promise<string>; put: (item: T) => Promise<string> },
+  record: Record<string, unknown> & { id: string; updatedAt: string | Date },
+  tableName: string
+) {
+  try {
+    const localRecord = await table.get(record.id);
+
+    if (!localRecord) {
+      // New record from server - add it
+      await table.add({ ...record, synced: true, updatedAt: new Date(record.updatedAt) } as T);
+    } else {
+      // Conflict resolution: newer updatedAt wins
+      const serverUpdatedAt = new Date(record.updatedAt);
+      const localUpdatedAt = new Date(localRecord.updatedAt);
+
+      if (serverUpdatedAt > localUpdatedAt) {
+        // Server is newer, update local
+        await table.put({ ...record, synced: true, updatedAt: serverUpdatedAt } as T);
+      } else if (localUpdatedAt > serverUpdatedAt && !localRecord.synced) {
+        // Local is newer and not synced, keep local (will be pushed later)
+        console.log(`Keeping local version of ${tableName} ${record.id}`);
       } else {
-        // Conflict resolution: newer updatedAt wins
-        const serverUpdatedAt = new Date(record.updatedAt);
-        const localUpdatedAt = new Date(localRecord.updatedAt);
-
-        if (serverUpdatedAt > localUpdatedAt) {
-          // Server is newer, update local
-          await ((db as unknown) as Record<string, { put: (data: unknown) => Promise<unknown> }>)[table].put({ ...record, synced: true });
-        } else if (localUpdatedAt > serverUpdatedAt && !localRecord.synced) {
-          // Local is newer and not synced, keep local
-          console.log(`Keeping local version of ${table} ${record.id}`);
-        } else {
-          // Same timestamp or local is already synced, use server
-          await ((db as unknown) as Record<string, { put: (data: unknown) => Promise<unknown> }>)[table].put({ ...record, synced: true });
-        }
+        // Same timestamp or local is already synced, use server version
+        await table.put({ ...record, synced: true, updatedAt: serverUpdatedAt } as T);
       }
     }
+  } catch (error) {
+    console.error(`Error syncing ${tableName} record ${record.id}:`, error);
+    // Continue with next record
   }
 }
 
 /**
  * Setup automatic sync on network reconnection
  */
-export function setupAutoSync(familyId: string) {
+export function setupAutoSync() {
   window.addEventListener('online', async () => {
     console.log('Network reconnected - starting sync');
     try {
       await syncWithBackend();
-      await pullFromBackend(familyId);
+      await pullFromBackend();
     } catch (error) {
       console.error('Auto-sync failed:', error);
     }
@@ -146,7 +201,7 @@ export function setupAutoSync(familyId: string) {
   setInterval(async () => {
     if (navigator.onLine) {
       try {
-        await pullFromBackend(familyId);
+        await pullFromBackend();
       } catch (error) {
         console.error('Periodic sync failed:', error);
       }
