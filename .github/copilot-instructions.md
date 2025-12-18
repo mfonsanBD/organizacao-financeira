@@ -1,0 +1,23 @@
+- [x] Scaffold the Project
+  - Next.js 14 (App Router) with TypeScript, ESLint, src directory, import alias, and empty template created.
+- [x] Customize the Project
+  - Prisma configurado com schema completo (Family, User, RBAC, Income, Expense, Budget, etc.)
+  - NextAuth configurado com Credentials provider e callbacks para RBAC
+  - shadcn/ui inicializado com componentes essenciais
+  - Estrutura de pastas por domínio criada (auth, family, income, expense, budget, etc.)
+  - PWA configurado com next-pwa e manifest.json
+  - IndexedDB (Dexie) configurado para offline-first com sync
+  - React Query configurado com polling inteligente para tempo real
+  - Providers configurados no layout root
+- [ ] Install Required Extensions
+- [ ] Compile the Project
+- [ ] Create and Run Task
+- [ ] Launch the Project
+- [ ] Ensure Documentation is Complete
+
+## Próximas Etapas
+- Validar compilação do projeto
+- Implementar funcionalidades de negócio por domínio
+- Criar Server Actions para cada feature
+- Implementar UI de autenticação (login/register)
+- Implementar dashboard e features financeiras

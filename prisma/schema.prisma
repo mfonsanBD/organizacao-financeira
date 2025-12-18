@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum RecurrenceType {
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+// Family (grupo financeiro)
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  incomes       Income[]
+  expenses      Expense[]
+  categories    Category[]
+  budgets       Budget[]
+  receivables   Receivable[]
+  notifications Notification[]
+
+  @@map("families")
+}
+
+// User (usuário pertence a uma Family)
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(MEMBER)
+  familyId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family        Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  sessions      Session[]
+  notifications Notification[]
+
+  @@index([familyId])
+  @@index([email])
+  @@map("users")
+}
+
+// Session (NextAuth)
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// Income (renda fixa mensal)
+model Income {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  dueDate     Int // Dia do mês (1-31)
+  familyId    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@map("incomes")
+}
+
+// Category (categorias de despesas)
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  color     String?
+  familyId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+  budgets  Budget[]
+
+  @@index([familyId])
+  @@map("categories")
+}
+
+// Expense (contas fixas e compras avulsas)
+model Expense {
+  id          String          @id @default(cuid())
+  description String
+  amount      Float
+  categoryId  String
+  familyId    String
+  paymentDate DateTime // Data de pagamento efetiva
+  isRecurring Boolean         @default(false)
+  recurrence  RecurrenceType?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([categoryId])
+  @@index([paymentDate])
+  @@map("expenses")
+}
+
+// Budget (orçamento mensal por categoria)
+model Budget {
+  id         String   @id @default(cuid())
+  categoryId String
+  familyId   String
+  amount     Float
+  month      Int // 1-12
+  year       Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, categoryId, month, year])
+  @@index([familyId])
+  @@index([categoryId])
+  @@map("budgets")
+}
+
+// Receivable (valores a receber)
+model Receivable {
+  id           String    @id @default(cuid())
+  description  String
+  amount       Float
+  expectedDate DateTime
+  receivedDate DateTime?
+  familyId     String
+  isReceived   Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([expectedDate])
+  @@map("receivables")
+}
+
+// Notification (push notifications)
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  familyId  String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([isRead])
+  @@map("notifications")
+}
