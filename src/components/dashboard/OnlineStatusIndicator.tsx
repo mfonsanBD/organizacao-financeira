@@ -7,40 +7,39 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export function OnlineStatusIndicator() {
-  const [isOnline, setIsOnline] = useState(() => 
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
+  const [isOnline, setIsOnline] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const unsyncedCount = useUnsyncedCount();
   const sync = useSync();
 
   useEffect(() => {
+    setMounted(true);
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
 
     const handleOnline = () => {
       setIsOnline(true);
       toast.success('Conexão restaurada!', {
         description: 'Sincronizando dados...',
       });
-      
-      // Auto sync when coming online
       if (unsyncedCount > 0) {
         sync.mutate();
       }
     };
-
     const handleOffline = () => {
       setIsOnline(false);
       toast.warning('Você está offline', {
         description: 'Suas alterações serão sincronizadas quando voltar online.',
       });
     };
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unsyncedCount, sync]);
 
   const handleManualSync = () => {
@@ -50,7 +49,6 @@ export function OnlineStatusIndicator() {
       });
       return;
     }
-
     sync.mutate(undefined, {
       onSuccess: () => {
         toast.success('Dados sincronizados!');
@@ -61,8 +59,12 @@ export function OnlineStatusIndicator() {
     });
   };
 
+  if (!mounted) {
+    // Evita hydration error: não renderiza nada até montar no client
+    return null;
+  }
+
   if (isOnline && unsyncedCount === 0) {
-    // Everything is synced and online - show subtle indicator
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Cloud className="h-4 w-4 text-green-600" />
