@@ -117,7 +117,20 @@ self.addEventListener('push', (event) => {
   }
 
   try {
-    const data = event.data.json();
+    let data;
+    
+    // Try to parse as JSON first, fallback to text
+    try {
+      data = event.data.json();
+    } catch {
+      // If not JSON, treat as plain text
+      const text = event.data.text();
+      data = {
+        title: 'Organização Financeira',
+        body: text,
+      };
+    }
+    
     console.log('[SW] Push data:', data);
 
     const options = {
@@ -155,7 +168,7 @@ self.addEventListener('push', (event) => {
       })
     );
   } catch (error) {
-    console.error('[SW] Error parsing push data:', error);
+    console.error('[SW] Error handling push:', error);
   }
 });
 
