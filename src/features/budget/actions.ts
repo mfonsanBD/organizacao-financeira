@@ -7,6 +7,7 @@ import {
   createBudgetSchema,
   CreateBudgetInput,
 } from '@/lib/validations/financial';
+import { createNotificationForFamily } from '@/features/notification/actions';
 
 /**
  * Create or update budget for a category/month/year
@@ -47,6 +48,13 @@ export async function upsertBudget(data: CreateBudgetInput) {
       include: {
         category: true,
       },
+    });
+
+    // Create notification for family members
+    await createNotificationForFamily({
+      title: '🎯 Orçamento Atualizado',
+      message: `${user.name} definiu orçamento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budget.amount)} para ${category.name}`,
+      link: '/budget',
     });
 
     revalidatePath('/dashboard');

@@ -9,6 +9,7 @@ import {
   CreateIncomeInput,
   UpdateIncomeInput,
 } from '@/lib/validations/financial';
+import { createNotificationForFamily } from '@/features/notification/actions';
 
 /**
  * Create new income
@@ -23,6 +24,13 @@ export async function createIncome(data: CreateIncomeInput) {
         ...validatedData,
         familyId: user.familyId,
       },
+    });
+
+    // Create notification for family members
+    await createNotificationForFamily({
+      title: '💰 Nova Renda Adicionada',
+      message: `${user.name} adicionou: ${income.description} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(income.amount)}`,
+      link: '/income',
     });
 
     revalidatePath('/dashboard');

@@ -15,8 +15,12 @@ import {
   Menu,
   X,
   Palette,
+  Bell,
+  BarChart3,
 } from 'lucide-react';
 import { useState } from 'react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { OnlineStatusIndicator } from '@/components/dashboard/OnlineStatusIndicator';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -29,6 +33,8 @@ const navigation = [
   { name: 'Orçamentos', href: '/budget', icon: PiggyBank },
   { name: 'A Receber', href: '/receivable', icon: FileText },
   { name: 'Categorias', href: '/categories', icon: Palette },
+  { name: 'Notificações', href: '/notifications', icon: Bell },
+  { name: 'Relatórios', href: '/reports', icon: BarChart3 },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -150,6 +156,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold">Finanças Familiares</h1>
+          <div className="ml-auto flex items-center gap-2">
+            <OnlineStatusIndicator />
+            <NotificationBell />
+          </div>
+        </header>
+
+        {/* Desktop header */}
+        <header className="hidden lg:flex h-16 items-center justify-end gap-4 border-b px-6">
+          <OnlineStatusIndicator />
+          <NotificationBell />
         </header>
 
         {/* Page content */}

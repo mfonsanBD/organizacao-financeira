@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { ReactQueryProvider } from '@/components/providers/react-query-provider';
+import { OfflineSyncProvider } from '@/components/providers/offline-sync-provider';
+import { ServiceWorkerRegister } from '@/components/providers/service-worker-register';
 import { Toaster } from '@/components/ui/sonner';
 
 export const metadata: Metadata = {
@@ -29,8 +31,11 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <ReactQueryProvider>
-            {children}
-            <Toaster />
+            <OfflineSyncProvider>
+              <ServiceWorkerRegister />
+              {children}
+              <Toaster />
+            </OfflineSyncProvider>
           </ReactQueryProvider>
         </AuthProvider>
       </body>

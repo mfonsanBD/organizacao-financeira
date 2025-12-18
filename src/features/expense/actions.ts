@@ -13,6 +13,7 @@ import {
   CreateCategoryInput,
   UpdateCategoryInput,
 } from '@/lib/validations/financial';
+import { createNotificationForFamily } from '@/features/notification/actions';
 
 /**
  * Create new expense
@@ -42,6 +43,13 @@ export async function createExpense(data: CreateExpenseInput) {
       include: {
         category: true,
       },
+    });
+
+    // Create notification for family members
+    await createNotificationForFamily({
+      title: '💸 Nova Despesa Registrada',
+      message: `${user.name} registrou: ${expense.description} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(expense.amount)} [${category.name}]`,
+      link: '/expense',
     });
 
     revalidatePath('/dashboard');

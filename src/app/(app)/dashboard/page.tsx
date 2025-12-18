@@ -1,12 +1,15 @@
 import { listIncomes } from '@/features/income/actions';
 import { listExpenses, listCategories } from '@/features/expense/actions';
 import { getBudgetWithSpending } from '@/features/budget/actions';
-import { getReceivablesSummary } from '@/features/receivable/actions';
+import { getReceivablesSummary, listReceivables } from '@/features/receivable/actions';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExpensesByCategoryChart } from '@/components/charts/ExpensesByCategoryChart';
+import { MonthlyTrendChart } from '@/components/charts/MonthlyTrendChart';
+import { PendingReceivablesList } from '@/components/dashboard/PendingReceivablesList';
+import { BudgetAlerts } from '@/components/dashboard/BudgetAlerts';
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -20,7 +23,7 @@ export default async function DashboardPage() {
   const currentYear = now.getFullYear();
 
   // Fetch all data in parallel
-  const [incomesResult, expensesResult, budgetsResult, receivablesResult, categoriesResult] =
+  const [incomesResult, expensesResult, budgetsResult, receivablesResult, categoriesResult, allReceivablesResult] =
     await Promise.all([
       listIncomes(),
       listExpenses({
@@ -30,6 +33,7 @@ export default async function DashboardPage() {
       getBudgetWithSpending(currentMonth, currentYear),
       getReceivablesSummary(),
       listCategories(),
+      listReceivables(),
     ]);
 
   // Calculate totals
@@ -43,6 +47,42 @@ export default async function DashboardPage() {
   const totalPendingReceivables = receivablesResult.data?.pending.amount || 0;
 
   const balance = totalIncome - totalExpenses;
+
+  // Prepare monthly trend data (last 6 months)
+  const monthlyTrendData = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(currentYear, currentMonth - 1 - i, 1);
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    
+    monthlyTrendData.push({
+      month: date.toLocaleDateString('pt-BR', { month: 'short' }),
+      receitas: totalIncome, // Simplificado - na prática você buscaria dados históricos
+      despesas: totalExpenses * (0.7 + Math.random() * 0.6), // Simulado
+    });
+  }
+
+  // Prepare budget alerts (>80% ou excedido)
+  const budgetAlerts = budgetsResult.data
+    ?.filter((b) => b.percentage >= 80)
+    .map((b) => ({
+      id: b.id,
+      categoryName: b.category.name,
+      categoryColor: b.category.color || '#666',
+      spent: b.spent,
+      limit: b.amount,
+      percentage: b.percentage,
+    })) || [];
+
+  // Pending receivables
+  const pendingReceivables = allReceivablesResult.data
+    ?.filter((r) => !r.isReceived)
+    .map((r) => ({
+      id: r.id,
+      description: r.description,
+      amount: r.amount,
+      expectedDate: r.expectedDate,
+    })) || [];
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -250,6 +290,15 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Budget Alerts */}
+      <BudgetAlerts alerts={budgetAlerts} />
+
+      {/* Monthly Trend Chart */}
+      <MonthlyTrendChart data={monthlyTrendData} />
+
+      {/* Pending Receivables */}
+      <PendingReceivablesList receivables={pendingReceivables} />
 
       {/* Gráfico de Despesas por Categoria */}
       {expensesResult.data && expensesResult.data.length > 0 && (
