@@ -5,7 +5,7 @@ export const createIncomeSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
   amount: z.number().positive('Valor deve ser positivo'),
   dueDate: z.number().min(1).max(31, 'Dia deve estar entre 1 e 31'),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean().optional().default(true),
 });
 
 export const updateIncomeSchema = createIncomeSchema.partial();
@@ -19,7 +19,7 @@ export const createExpenseSchema = z.object({
   amount: z.number().positive('Valor deve ser positivo'),
   categoryId: z.string().min(1, 'Categoria é obrigatória'),
   paymentDate: z.date(),
-  isRecurring: z.boolean().default(false),
+  isRecurring: z.boolean().optional().default(false),
   recurrence: z.enum(['MONTHLY', 'YEARLY', 'CUSTOM']).optional(),
 });
 
@@ -62,7 +62,7 @@ export const createReceivableSchema = z.object({
   amount: z.number().positive('Valor deve ser positivo'),
   expectedDate: z.date(),
   receivedDate: z.date().optional(),
-  isReceived: z.boolean().default(false),
+  isReceived: z.boolean().optional().default(false),
 });
 
 export const updateReceivableSchema = createReceivableSchema.partial();
