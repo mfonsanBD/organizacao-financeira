@@ -14,7 +14,7 @@ export function OfflineSyncProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (session?.user?.familyId) {
       // Setup automatic sync on network reconnection and periodic sync
-      setupAutoSync(session.user.familyId);
+      setupAutoSync();
       
       console.log('Offline-first sync initialized for family:', session.user.familyId);
     }
