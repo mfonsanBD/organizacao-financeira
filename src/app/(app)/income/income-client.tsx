@@ -155,7 +155,7 @@ export function IncomeClient({ incomes }: IncomeClientProps) {
 
                   <div className="flex items-center gap-2">
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <TooltipTrigger asChild className='rounded'>
                         <Button
                           variant="outline"
                           size="icon"
@@ -174,7 +174,7 @@ export function IncomeClient({ incomes }: IncomeClientProps) {
                     </Tooltip>
 
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <TooltipTrigger asChild className='rounded'>
                         <Button
                           variant="outline"
                           size="icon"
@@ -189,7 +189,7 @@ export function IncomeClient({ incomes }: IncomeClientProps) {
                     </Tooltip>
 
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <TooltipTrigger asChild className='rounded'>
                         <Button
                           variant="outline"
                           size="icon"
@@ -227,7 +227,7 @@ export function IncomeClient({ incomes }: IncomeClientProps) {
           
           {incomeToDelete && (
             <div className="py-4">
-              <div className="p-4 bg-gray-100 rounded-lg space-y-1">
+              <div className="p-4 bg-gray-100 rounded space-y-1">
                 <p className="font-semibold text-gray-900">{incomeToDelete.description}</p>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>Valor:</span>

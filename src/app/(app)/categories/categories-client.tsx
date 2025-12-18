@@ -68,7 +68,7 @@ export function CategoriesClient({ categories }: CategoriesClientProps) {
           </p>
         </div>
         <Button onClick={() => setFormOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="h-4 w-4" />
           Nova Categoria
         </Button>
       </div>
@@ -92,7 +92,7 @@ export function CategoriesClient({ categories }: CategoriesClientProps) {
                   <div className="flex items-center gap-3">
                     {category.color && (
                       <div
-                        className="w-6 h-6 rounded-full border-2 border-gray-200"
+                        className="w-6 h-6 rounded border-2 border-gray-200"
                         style={{ backgroundColor: category.color }}
                       />
                     )}

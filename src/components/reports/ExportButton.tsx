@@ -68,12 +68,12 @@ export function ExportButton({ entity, startDate, endDate, filename }: ExportBut
     >
       {isExporting ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          <Loader2 className="h-4 w-4 animate-spin" />
           Exportando...
         </>
       ) : (
         <>
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4" />
           Exportar Excel
         </>
       )}

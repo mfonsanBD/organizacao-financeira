@@ -131,7 +131,7 @@ export function BudgetClient({ budgets, month, year }: BudgetClientProps) {
           <CardContent>
             <p
               className={`text-2xl font-bold ${
-                totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'
+                totalRemaining >= 0 ? 'text-teal-600' : 'text-red-600'
               }`}
             >
               {new Intl.NumberFormat('pt-BR', {
@@ -163,7 +163,7 @@ export function BudgetClient({ budgets, month, year }: BudgetClientProps) {
                       <div className="flex items-center gap-2">
                         {budget.category.color && (
                           <div
-                            className="w-4 h-4 rounded-full"
+                            className="w-4 h-4 rounded"
                             style={{ backgroundColor: budget.category.color }}
                           />
                         )}
@@ -203,17 +203,17 @@ export function BudgetClient({ budgets, month, year }: BudgetClientProps) {
                         </span>
                         <span
                           className={`font-medium ${
-                            isOverBudget ? 'text-red-600' : 'text-green-600'
+                            isOverBudget ? 'text-red-600' : 'text-teal-600'
                           }`}
                         >
                           {percentageUsed.toFixed(1)}%
                         </span>
                       </div>
 
-                      <div className="w-full bg-secondary rounded-full h-3">
+                      <div className="w-full bg-secondary rounded h-3">
                         <div
-                          className={`h-3 rounded-full transition-all ${
-                            isOverBudget ? 'bg-red-600' : 'bg-green-600'
+                          className={`h-3 rounded transition-all ${
+                            isOverBudget ? 'bg-red-600' : 'bg-teal-600'
                           }`}
                           style={{ width: `${Math.min(percentageUsed, 100)}%` }}
                         />
@@ -222,7 +222,7 @@ export function BudgetClient({ budgets, month, year }: BudgetClientProps) {
                       <div className="flex items-center justify-between text-sm">
                         <span
                           className={`font-medium ${
-                            budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'
+                            budget.remaining >= 0 ? 'text-teal-600' : 'text-red-600'
                           }`}
                         >
                           {budget.remaining >= 0 ? 'Disponível' : 'Excedido'}:{' '}

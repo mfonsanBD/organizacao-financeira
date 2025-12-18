@@ -121,7 +121,7 @@ export function ReceivableClient({ receivables }: ReceivableClientProps) {
             <CardTitle className="text-sm font-medium">Recebido</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-teal-600">
               {new Intl.NumberFormat('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
@@ -161,7 +161,7 @@ export function ReceivableClient({ receivables }: ReceivableClientProps) {
                         onClick={() => handleMarkAsReceived(receivable.id)}
                         title="Marcar como recebido"
                       >
-                        <Check className="h-4 w-4 text-green-600" />
+                        <Check className="h-4 w-4 text-teal-600" />
                       </Button>
                       <Button
                         variant="outline"
@@ -197,7 +197,7 @@ export function ReceivableClient({ receivables }: ReceivableClientProps) {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg font-semibold">{receivable.description}</h3>
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                        <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded">
                           Recebido
                         </span>
                       </div>
@@ -210,7 +210,7 @@ export function ReceivableClient({ receivables }: ReceivableClientProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-green-600 mr-4">
+                      <span className="text-xl font-bold text-teal-600 mr-4">
                         {new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',

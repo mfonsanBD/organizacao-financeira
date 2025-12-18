@@ -61,7 +61,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 bg-white rounded-lg border border-gray-200">
+          <div className="px-3 py-1.5 bg-white rounded border border-gray-200">
             <p className="text-xs font-medium text-gray-600">
               {new Date().toLocaleDateString('pt-BR', { 
                 month: 'long', 
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Main Balance Card - Sequence Style */}
-      <Card className="bg-linear-to-br from-teal-700 to-teal-800 border-0 rounded-2xl overflow-hidden">
+      <Card className="bg-linear-to-br from-teal-700 to-teal-800 border-0 rounded-lg overflow-hidden">
         <CardContent className="p-6 lg:p-8">
           <div className="flex flex-col gap-6">
             <div className="flex items-start justify-between">
@@ -103,21 +103,21 @@ export default async function DashboardPage() {
             <div className="flex gap-2 flex-wrap">
               <Button 
                 size="sm" 
-                className="bg-teal-500 text-white hover:bg-teal-600 font-semibold px-4 py-2 rounded-lg border-0"
+                className="bg-teal-500 text-white hover:bg-teal-600 font-semibold px-4 py-2 rounded border-0"
               >
                 Adicionar
               </Button>
               <Button 
                 size="sm" 
                 variant="outline"
-                className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white font-medium px-4 py-2 rounded-lg backdrop-blur-sm"
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white font-medium px-4 py-2 rounded backdrop-blur-sm"
               >
                 Enviar
               </Button>
               <Button 
                 size="sm" 
                 variant="outline"
-                className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white font-medium px-4 py-2 rounded-lg backdrop-blur-sm"
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white font-medium px-4 py-2 rounded backdrop-blur-sm"
               >
                 Solicitar
               </Button>
@@ -128,10 +128,10 @@ export default async function DashboardPage() {
 
       {/* Summary Cards - Sequence Style */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-white border border-gray-100 transition-all rounded-xl">
+        <Card className="bg-white border border-gray-100 transition-all">
           <CardContent className="p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className="p-2.5 bg-teal-100 rounded-lg">
+              <div className="p-2.5 bg-teal-100 rounded">
                 <TrendingUp className="h-5 w-5 text-teal-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -150,10 +150,10 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-gray-100 transition-all rounded-xl">
+        <Card className="bg-white border border-gray-100 transition-all">
           <CardContent className="p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className="p-2.5 bg-red-100 rounded-lg">
+              <div className="p-2.5 bg-red-100 rounded">
                 <TrendingDown className="h-5 w-5 text-red-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -172,10 +172,10 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-gray-100 transition-all rounded-xl">
+        <Card className="bg-white border border-gray-100 transition-all">
           <CardContent className="p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className={`p-2.5 rounded-lg ${balance >= 0 ? 'bg-teal-100' : 'bg-amber-100'}`}>
+              <div className={`p-2.5 rounded ${balance >= 0 ? 'bg-teal-100' : 'bg-amber-100'}`}>
                 <PiggyBank className={`h-5 w-5 ${balance >= 0 ? 'text-teal-600' : 'text-amber-600'}`} />
               </div>
               <div className="flex-1 min-w-0">
@@ -200,7 +200,7 @@ export default async function DashboardPage() {
 
       {/* Gráfico de Despesas por Categoria */}
       {expensesResult.data && expensesResult.data.length > 0 && (
-        <Card className="bg-white border border-gray-100 rounded-xl">
+        <Card className="bg-white border border-gray-100">
           <CardHeader className="border-b border-gray-100 pb-4">
             <CardTitle className="text-lg font-semibold text-gray-900">Despesas por Categoria</CardTitle>
           </CardHeader>
@@ -226,9 +226,9 @@ export default async function DashboardPage() {
 
       {/* Empty state - Sequence Style */}
       {!incomesResult.data?.length && !expensesResult.data?.length && (
-          <Card className="bg-white border border-gray-100 rounded-xl p-12 text-center">
+          <Card className="bg-white border border-gray-100 p-12 text-center">
             <div className="max-w-md mx-auto">
-              <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-5">
                 <LayoutDashboard className="h-10 w-10 text-gray-300" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -240,13 +240,13 @@ export default async function DashboardPage() {
               <div className="flex gap-3 justify-center flex-wrap">
                 <a
                   href="/income"
-                  className="px-5 py-2.5 text-sm font-semibold text-white bg-linear-to-r from-teal-600 to-teal-600 rounded-lg hover:from-teal-700 hover:to-teal-700 transition-all"
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-linear-to-r from-teal-600 to-teal-600 rounded hover:from-teal-700 hover:to-teal-700 transition-all"
                 >
                   Adicionar Receita
                 </a>
                 <a
                   href="/expense"
-                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-all"
                 >
                   Adicionar Despesa
                 </a>

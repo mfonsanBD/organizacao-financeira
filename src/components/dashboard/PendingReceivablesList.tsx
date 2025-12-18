@@ -44,7 +44,7 @@ export function PendingReceivablesList({ receivables }: PendingReceivablesListPr
               </p>
             </div>
             <div className="ml-4 text-right">
-              <p className="font-semibold text-green-600">
+              <p className="font-semibold text-teal-600">
                 {new Intl.NumberFormat('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',

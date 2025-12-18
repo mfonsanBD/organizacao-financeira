@@ -4,11 +4,25 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ExpenseForm } from '@/features/expense/components/ExpenseForm';
 import { deleteExpense } from '@/features/expense/actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Plus, Repeat, Calendar, Copy } from 'lucide-react';
+import { Pencil, Trash2, Plus, Repeat, Calendar, Copy, AlertTriangle } from 'lucide-react';
 
 interface Expense {
   id: string;
@@ -50,17 +64,29 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
       }
     | undefined
   >();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
-
+    setIsDeleting(true);
     const result = await deleteExpense(id);
+    
     if (result.error) {
       toast.error(result.error);
     } else {
       toast.success('Despesa excluída com sucesso!');
       router.refresh();
     }
+    
+    setIsDeleting(false);
+    setDeleteDialogOpen(false);
+    setExpenseToDelete(null);
+  };
+
+  const openDeleteDialog = (expense: Expense) => {
+    setExpenseToDelete(expense);
+    setDeleteDialogOpen(true);
   };
 
   const handleEdit = (expense: Expense) => {
@@ -108,7 +134,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
   const renderExpenseList = (expenseList: Expense[]) => {
     if (expenseList.length === 0) {
       return (
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center col-span-2">
           <p className="text-muted-foreground">
             Nenhuma despesa cadastrada nesta categoria.
           </p>
@@ -135,7 +161,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
               <div className="flex items-center gap-2">
                 {category.color && (
                   <div
-                    className="w-4 h-4 rounded-full"
+                    className="w-4 h-4 rounded"
                     style={{ backgroundColor: category.color }}
                   />
                 )}
@@ -153,14 +179,14 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
             {category.expenses.map((expense) => (
               <div
                 key={expense.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-3 border rounded hover:bg-gray-50 transition-colors"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    {expense.isRecurring && <Repeat className="h-4 w-4 text-blue-600" />}
+                    {expense.isRecurring && <Repeat className="h-4 w-4 text-zinc-600" />}
                     <h4 className="font-medium">{expense.description}</h4>
                     {expense.isRecurring && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      <span className="text-xs bg-zinc-100 text-zinc-700 px-2 py-1 rounded-sm">
                         {expense.recurrence === 'MONTHLY' ? 'Mensal' : expense.recurrence === 'YEARLY' ? 'Anual' : 'Personalizado'}
                       </span>
                     )}
@@ -179,29 +205,49 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
                     }).format(expense.amount)}
                   </span>
                   {expense.isRecurring && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleDuplicate(expense)}
-                      title="Duplicar para este mês"
-                    >
-                      <Copy className="h-4 w-4 text-blue-600" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild className='rounded'>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDuplicate(expense)}
+                        >
+                          <Copy className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Duplicar para este mês</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleEdit(expense)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleDelete(expense.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild className='rounded'>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(expense)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Editar despesa</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild className='rounded'>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => openDeleteDialog(expense)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Excluir despesa</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             ))}
@@ -211,6 +257,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
   };
 
   return (
+    <TooltipProvider>
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -220,7 +267,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
           </p>
         </div>
         <Button onClick={() => setFormOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="h-4 w-4" />
           Nova Despesa
         </Button>
       </div>
@@ -267,7 +314,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-purple-600">
+            <p className="text-2xl font-bold text-rose-600">
               {new Intl.NumberFormat('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
@@ -278,7 +325,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
         </Card>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-6">
+      <Tabs defaultValue="all" className="space-y-6" suppressHydrationWarning>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="all">Todas ({expenses.length})</TabsTrigger>
           <TabsTrigger value="recurring">
@@ -291,20 +338,84 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-6">
+        <TabsContent value="all" className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {renderExpenseList(expenses)}
         </TabsContent>
 
-        <TabsContent value="recurring" className="space-y-6">
+        <TabsContent value="recurring" className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {renderExpenseList(recurringExpenses)}
         </TabsContent>
 
-        <TabsContent value="onetime" className="space-y-6">
+        <TabsContent value="onetime" className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {renderExpenseList(oneTimeExpenses)}
         </TabsContent>
       </Tabs>
 
       <ExpenseForm open={formOpen} onOpenChange={handleCloseForm} expense={editingExpense} />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirmar Exclusão
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Você está prestes a excluir a despesa:
+            </DialogDescription>
+          </DialogHeader>
+          
+          {expenseToDelete && (
+            <div className="py-4">
+              <div className="p-4 bg-gray-100 rounded space-y-1">
+                <p className="font-semibold text-gray-900">{expenseToDelete.description}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Categoria:</span>
+                  <span className="font-medium">{expenseToDelete.category.name}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Valor:</span>
+                  <span className="font-medium text-red-600">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    }).format(expenseToDelete.amount)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Data:</span>
+                  <span className="font-medium">{new Date(expenseToDelete.paymentDate).toLocaleDateString('pt-BR')}</span>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-600 mt-4">
+                <strong className='text-red-600'>Atenção:</strong> Esta ação não poderá ser desfeita. A despesa será permanentemente removida do sistema.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => expenseToDelete && handleDelete(expenseToDelete.id)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+    </TooltipProvider>
   );
 }

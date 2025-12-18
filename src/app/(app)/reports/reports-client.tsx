@@ -120,10 +120,10 @@ export function ReportsClient() {
               {entities.map((entity) => (
                 <label
                   key={entity.value}
-                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  className={`flex items-start gap-3 p-4 border-2 rounded cursor-pointer transition-all ${
                     selectedEntity === entity.value
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
+                      ? 'border-teal-600 bg-teal/5'
+                      : 'border-border hover:border-teal/50'
                   }`}
                 >
                   <input

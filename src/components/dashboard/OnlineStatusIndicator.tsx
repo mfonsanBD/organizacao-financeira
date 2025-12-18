@@ -40,7 +40,7 @@ export function OnlineStatusIndicator() {
       window.removeEventListener('offline', handleOffline);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unsyncedCount, sync]);
+  }, [unsyncedCount]);
 
   const handleManualSync = () => {
     if (!isOnline) {
@@ -66,8 +66,8 @@ export function OnlineStatusIndicator() {
 
   if (isOnline && unsyncedCount === 0) {
     return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Cloud className="h-4 w-4 text-green-600" />
+      <div className="flex items-center gap-2 text-xs text-teal-600">
+        <Cloud className="h-4 w-4" />
         <span className="hidden sm:inline">Online</span>
       </div>
     );
@@ -76,13 +76,13 @@ export function OnlineStatusIndicator() {
   return (
     <div className="flex items-center gap-2">
       {!isOnline ? (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-100 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-amber-100 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100">
           <CloudOff className="h-4 w-4" />
           <span className="text-xs font-medium hidden sm:inline">Offline</span>
         </div>
       ) : unsyncedCount > 0 ? (
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-100 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-blue-100 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100">
             <WifiOff className="h-4 w-4" />
             <span className="text-xs font-medium">
               {unsyncedCount} {unsyncedCount === 1 ? 'alteração' : 'alterações'} não sincronizada

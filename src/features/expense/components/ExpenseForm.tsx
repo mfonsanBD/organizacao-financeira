@@ -57,18 +57,9 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
     watch,
   } = useForm({
     resolver: zodResolver(createExpenseSchema),
-    defaultValues: expense
-      ? {
-          description: expense.description,
-          amount: expense.amount,
-          categoryId: expense.categoryId,
-          paymentDate: expense.paymentDate,
-          isRecurring: expense.isRecurring,
-          recurrence: expense.recurrence ?? undefined,
-        }
-      : {
-          isRecurring: false,
-        },
+    defaultValues: {
+      isRecurring: false,
+    },
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -85,6 +76,31 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
       fetchCategories();
     }
   }, [open]);
+
+  // Reset form when dialog opens or expense changes
+  useEffect(() => {
+    if (open) {
+      if (expense) {
+        reset({
+          description: expense.description,
+          amount: expense.amount,
+          categoryId: expense.categoryId,
+          paymentDate: expense.paymentDate,
+          isRecurring: expense.isRecurring,
+          recurrence: expense.recurrence ?? undefined,
+        });
+      } else {
+        reset({
+          description: '',
+          amount: 0,
+          categoryId: '',
+          paymentDate: new Date(),
+          isRecurring: false,
+          recurrence: undefined,
+        });
+      }
+    }
+  }, [expense, open, reset]);
 
   const onSubmit = async (data: ExpenseFormData) => {
     try {
@@ -149,7 +165,8 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
               onValueChange={(value) => setValue('categoryId', value)}
               defaultValue={expense?.categoryId}
             >
-              <SelectTrigger>
+              <SelectTrigger
+              className="w-full">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -179,7 +196,7 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
             )}
           </div>
 
-          <div className="space-y-3 p-4 border rounded-lg bg-blue-50/50">
+          <div className="space-y-3 p-4 border rounded bg-blue-50/50">
             <div className="flex items-center space-x-2">
               <input
                 id="isRecurring"
@@ -204,7 +221,7 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
                   }
                   defaultValue={expense?.recurrence || undefined}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione a frequência" />
                   </SelectTrigger>
                   <SelectContent>
