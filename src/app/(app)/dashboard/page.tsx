@@ -1,11 +1,12 @@
 import { listIncomes } from '@/features/income/actions';
-import { listExpenses } from '@/features/expense/actions';
+import { listExpenses, listCategories } from '@/features/expense/actions';
 import { getBudgetWithSpending } from '@/features/budget/actions';
 import { getReceivablesSummary } from '@/features/receivable/actions';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ExpensesByCategoryChart } from '@/components/charts/ExpensesByCategoryChart';
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -19,15 +20,17 @@ export default async function DashboardPage() {
   const currentYear = now.getFullYear();
 
   // Fetch all data in parallel
-  const [incomesResult, expensesResult, budgetsResult, receivablesResult] = await Promise.all([
-    listIncomes(),
-    listExpenses({
-      startDate: new Date(currentYear, currentMonth - 1, 1),
-      endDate: new Date(currentYear, currentMonth, 0, 23, 59, 59),
-    }),
-    getBudgetWithSpending(currentMonth, currentYear),
-    getReceivablesSummary(),
-  ]);
+  const [incomesResult, expensesResult, budgetsResult, receivablesResult, categoriesResult] =
+    await Promise.all([
+      listIncomes(),
+      listExpenses({
+        startDate: new Date(currentYear, currentMonth - 1, 1),
+        endDate: new Date(currentYear, currentMonth, 0, 23, 59, 59),
+      }),
+      getBudgetWithSpending(currentMonth, currentYear),
+      getReceivablesSummary(),
+      listCategories(),
+    ]);
 
   // Calculate totals
   const totalIncome =
@@ -244,6 +247,32 @@ export default async function DashboardPage() {
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gráfico de Despesas por Categoria */}
+      {expensesResult.data && expensesResult.data.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Despesas por Categoria</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ExpensesByCategoryChart
+              data={
+                categoriesResult.data?.map((cat) => {
+                  const categoryExpenses = expensesResult.data?.filter(
+                    (e) => e.category.id === cat.id
+                  );
+                  const total = categoryExpenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
+                  return {
+                    name: cat.name,
+                    value: total,
+                    color: cat.color,
+                  };
+                }).filter((item) => item.value > 0) || []
+              }
+            />
           </CardContent>
         </Card>
       )}

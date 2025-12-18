@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X,
+  Palette,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Despesas', href: '/expense', icon: TrendingDown },
   { name: 'Orçamentos', href: '/budget', icon: PiggyBank },
   { name: 'A Receber', href: '/receivable', icon: FileText },
+  { name: 'Categorias', href: '/categories', icon: Palette },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {

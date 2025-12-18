@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { ReactQueryProvider } from '@/components/providers/react-query-provider';
@@ -8,12 +8,15 @@ export const metadata: Metadata = {
   title: 'Organização Financeira',
   description: 'Sistema de organização financeira familiar',
   manifest: '/manifest.json',
-  themeColor: '#000000',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Organização Financeira',
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#000000',
 };
 
 export default function RootLayout({
