@@ -15,8 +15,9 @@ import {
   Palette,
   Bell,
   BarChart3,
+  Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { OnlineStatusIndicator } from '@/components/dashboard/OnlineStatusIndicator';
 
@@ -24,18 +25,25 @@ interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
-  { name: 'Painel de Controle', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Receita', href: '/income', icon: TrendingUp },
-  { name: 'Despesas', href: '/expense', icon: TrendingDown },
-  { name: 'Categorias', href: '/categories', icon: Palette },
-  { name: 'Notificações', href: '/notifications', icon: Bell },
-  { name: 'Relatórios', href: '/reports', icon: BarChart3 },
+const allNavigation = [
+  { name: 'Painel de Controle', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MEMBER'] },
+  { name: 'Receita', href: '/income', icon: TrendingUp, roles: ['ADMIN', 'MEMBER'] },
+  { name: 'Despesas', href: '/expense', icon: TrendingDown, roles: ['ADMIN', 'MEMBER'] },
+  { name: 'Categorias', href: '/categories', icon: Palette, roles: ['ADMIN'] },
+  { name: 'Usuários', href: '/users', icon: Users, roles: ['ADMIN'] },
+  { name: 'Notificações', href: '/notifications', icon: Bell, roles: ['ADMIN', 'MEMBER'] },
+  { name: 'Relatórios', href: '/reports', icon: BarChart3, roles: ['ADMIN', 'MEMBER'] },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  
+  // Filter navigation based on user role
+  const navigation = useMemo(() => {
+    const userRole = session?.user?.role || 'MEMBER';
+    return allNavigation.filter(item => item.roles.includes(userRole));
+  }, [session?.user?.role]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

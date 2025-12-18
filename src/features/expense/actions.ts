@@ -14,6 +14,7 @@ import {
   UpdateCategoryInput,
 } from '@/lib/validations/financial';
 import { createNotificationForFamily } from '@/features/notification/actions';
+import { sendPushToUsers } from '@/lib/webpush/server';
 
 /**
  * Create new expense
@@ -51,6 +52,32 @@ export async function createExpense(data: CreateExpenseInput) {
       message: `${user.name} registrou: ${expense.description} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(expense.amount)} [${category.name}]`,
       link: '/expense',
     });
+
+    // Send push notification to all family members except the creator
+    const familyMembers = await prisma.user.findMany({
+      where: {
+        familyId: user.familyId,
+        id: { not: user.id },
+      },
+      select: { id: true },
+    });
+
+    if (familyMembers.length > 0) {
+      await sendPushToUsers(
+        familyMembers.map((m) => m.id),
+        {
+          title: '💸 Nova Despesa',
+          body: `${user.name} registrou: ${expense.description} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(expense.amount)}`,
+          icon: '/icon-192x192.png',
+          badge: '/icon-96x96.png',
+          data: {
+            url: '/expense',
+            expenseId: expense.id,
+          },
+        },
+        prisma
+      );
+    }
 
     revalidatePath('/dashboard');
     revalidatePath('/expense');

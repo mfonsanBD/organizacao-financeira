@@ -10,6 +10,7 @@ import {
   UpdateIncomeInput,
 } from '@/lib/validations/financial';
 import { createNotificationForFamily } from '@/features/notification/actions';
+import { sendPushToUsers } from '@/lib/webpush/server';
 
 /**
  * Create new income
@@ -32,6 +33,32 @@ export async function createIncome(data: CreateIncomeInput) {
       message: `${user.name} adicionou: ${income.description} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(income.amount)}`,
       link: '/income',
     });
+
+    // Send push notification to all family members except the creator
+    const familyMembers = await prisma.user.findMany({
+      where: {
+        familyId: user.familyId,
+        id: { not: user.id },
+      },
+      select: { id: true },
+    });
+
+    if (familyMembers.length > 0) {
+      await sendPushToUsers(
+        familyMembers.map((m) => m.id),
+        {
+          title: '💰 Nova Receita',
+          body: `${user.name} adicionou: ${income.description} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(income.amount)}`,
+          icon: '/icon-192x192.png',
+          badge: '/icon-96x96.png',
+          data: {
+            url: '/income',
+            incomeId: income.id,
+          },
+        },
+        prisma
+      );
+    }
 
     revalidatePath('/dashboard');
     revalidatePath('/income');

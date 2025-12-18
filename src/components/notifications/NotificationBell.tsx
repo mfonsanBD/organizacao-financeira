@@ -90,7 +90,7 @@ export function NotificationBell() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-125 overflow-y-auto">
+      <DropdownMenuContent align="end" className="w-120 max-h-125 overflow-y-auto">
         <div className="flex items-center justify-between p-2 border-b">
           <h3 className="font-semibold">Notificações</h3>
           <div className="flex gap-1">

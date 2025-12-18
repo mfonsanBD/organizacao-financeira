@@ -7,6 +7,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExpensesByCategoryChart } from '@/components/charts/ExpensesByCategoryChart';
 import { MonthlyTrendChart } from '@/components/charts/MonthlyTrendChart';
+import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, PiggyBank, TrendingDown, TrendingUp } from 'lucide-react';
 
@@ -50,6 +51,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-400 mx-auto">
+      {/* Push Notifications Toggle */}
+      <PushNotificationToggle />
+
       {/* Header */}
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>

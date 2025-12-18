@@ -8,6 +8,7 @@ import { deleteCategory } from '@/features/expense/actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2, Plus, Palette } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Category {
   id: string;
@@ -22,6 +23,7 @@ interface CategoriesClientProps {
 
 export function CategoriesClient({ categories }: CategoriesClientProps) {
   const router = useRouter();
+  const { isAdmin } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<
     | {
@@ -67,10 +69,12 @@ export function CategoriesClient({ categories }: CategoriesClientProps) {
             Organize suas despesas por categorias personalizadas
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Nova Categoria
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Nova Categoria
+          </Button>
+        )}
       </div>
 
       {categories.length === 0 ? (
@@ -98,22 +102,24 @@ export function CategoriesClient({ categories }: CategoriesClientProps) {
                     )}
                     <span>{category.name}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(category)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(category.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(category)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(category.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>

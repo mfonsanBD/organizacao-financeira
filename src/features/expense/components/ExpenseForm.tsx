@@ -165,8 +165,7 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
               onValueChange={(value) => setValue('categoryId', value)}
               defaultValue={expense?.categoryId}
             >
-              <SelectTrigger
-              className="w-full">
+              <SelectTrigger>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -221,7 +220,7 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
                   }
                   defaultValue={expense?.recurrence || undefined}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger>
                     <SelectValue placeholder="Selecione a frequência" />
                   </SelectTrigger>
                   <SelectContent>

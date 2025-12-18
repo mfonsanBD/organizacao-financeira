@@ -3,7 +3,10 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // Define protected routes
-const protectedRoutes = ['/dashboard', '/income', '/expense', '/budget', '/receivable', '/categories', '/reports'];
+const protectedRoutes = ['/dashboard', '/income', '/expense', '/budget', '/receivable', '/categories', '/reports', '/users', '/notifications'];
+
+// Admin-only routes
+const adminRoutes = ['/users', '/categories'];
 
 const authRoutes = ['/auth/signin', '/auth/register'];
 
@@ -29,6 +32,12 @@ export async function middleware(request: NextRequest) {
     const url = new URL('/auth/signin', request.url);
     url.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(url);
+  }
+
+  // Check admin-only routes
+  const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
+  if (isAdminRoute && isAuthenticated && token.role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // Redirect to dashboard if trying to access auth routes while authenticated
