@@ -8,7 +8,6 @@ export async function syncWithBackend() {
   try {
     // Check if online
     if (!navigator.onLine) {
-      console.log('Offline - sync postponed');
       return;
     }
 
@@ -25,8 +24,6 @@ export async function syncWithBackend() {
     await syncEntities('categories', unsyncedCategories);
     await syncEntities('budgets', unsyncedBudgets);
     await syncEntities('receivables', unsyncedReceivables);
-
-    console.log('Sync completed successfully');
   } catch (error) {
     console.error('Sync failed:', error);
     throw error;
@@ -73,7 +70,6 @@ async function syncEntities(entityType: string, entities: unknown[]) {
 export async function pullFromBackend() {
   try {
     if (!navigator.onLine) {
-      console.log('Offline - pull postponed');
       return;
     }
 
@@ -94,8 +90,6 @@ export async function pullFromBackend() {
 
     // Update local DB with latest data, resolving conflicts by updatedAt
     await resolveConflictsAndUpdate(data);
-
-    console.log('Pull completed successfully');
   } catch (error) {
     console.error('Pull failed:', error);
     // Don't throw - sync is non-critical
@@ -143,8 +137,6 @@ async function resolveConflictsAndUpdate(serverData: {
       await syncRecord(db.receivables, record, 'receivables');
     }
   }
-  
-  console.log('Conflict resolution completed');
 }
 
 /**
@@ -171,7 +163,6 @@ async function syncRecord<T extends { id: string; updatedAt: Date; synced: boole
         await table.put({ ...record, synced: true, updatedAt: serverUpdatedAt } as T);
       } else if (localUpdatedAt > serverUpdatedAt && !localRecord.synced) {
         // Local is newer and not synced, keep local (will be pushed later)
-        console.log(`Keeping local version of ${tableName} ${record.id}`);
       } else {
         // Same timestamp or local is already synced, use server version
         await table.put({ ...record, synced: true, updatedAt: serverUpdatedAt } as T);
@@ -188,7 +179,6 @@ async function syncRecord<T extends { id: string; updatedAt: Date; synced: boole
  */
 export function setupAutoSync() {
   window.addEventListener('online', async () => {
-    console.log('Network reconnected - starting sync');
     try {
       await syncWithBackend();
       await pullFromBackend();

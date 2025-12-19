@@ -7,6 +7,14 @@ import { ServiceWorkerRegister } from '@/components/providers/service-worker-reg
 import { Toaster } from '@/components/ui/sonner';
 import { Geist, Geist_Mono } from "next/font/google";
 
+const geist = Geist({ 
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({ 
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: 'Organização Financeira',
   description: 'Sistema de organização financeira familiar',
@@ -19,16 +27,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#000000',
+  themeColor: '#0d9488',
 };
-
-const _geist = Geist({ 
-  subsets: ["latin"]
-});
-
-const _geistMono = Geist_Mono({ 
-  subsets: ["latin"]
-});
 
 export default function RootLayout({
   children,
@@ -36,8 +36,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className={`${_geist.className} ${_geistMono.className}`}>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className={`${geist.className} ${geistMono.className} antialiased`}>
         <AuthProvider>
           <ReactQueryProvider>
             <OfflineSyncProvider>

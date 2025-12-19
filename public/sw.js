@@ -7,10 +7,8 @@ const CACHE_NAME = 'organizacao-financeira-v1';
 
 // Install event - cache essential resources
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching app shell');
       return cache.addAll([
         '/',
         '/dashboard',
@@ -26,13 +24,11 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -72,7 +68,7 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch((error) => {
-        console.log('[SW] Fetch failed, returning cached version:', error);
+        console.error('[SW] Fetch failed:', error);
         return caches.match(event.request).then((response) => {
           return response || caches.match('/offline');
         });
@@ -82,7 +78,6 @@ self.addEventListener('fetch', (event) => {
 
 // Background Sync - sync offline data when connection is restored
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync event:', event.tag);
   if (event.tag === 'sync-financial-data') {
     event.waitUntil(syncFinancialData());
   }
@@ -90,8 +85,6 @@ self.addEventListener('sync', (event) => {
 
 async function syncFinancialData() {
   try {
-    console.log('[SW] Background sync triggered');
-    
     // Notify all clients that sync is happening
     const clients = await self.clients.matchAll();
     clients.forEach((client) => {
@@ -99,8 +92,6 @@ async function syncFinancialData() {
         type: 'SYNC_START',
       });
     });
-    
-    console.log('[SW] Sync completed successfully');
   } catch (error) {
     console.error('[SW] Background sync failed:', error);
     throw error; // Re-throw to retry sync
@@ -109,10 +100,8 @@ async function syncFinancialData() {
 
 // Push notifications
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received:', event);
-  
   if (!event.data) {
-    console.warn('[SW] Push event has no data');
+    console.error('[SW] Push event has no data');
     return;
   }
 
@@ -130,8 +119,6 @@ self.addEventListener('push', (event) => {
         body: text,
       };
     }
-    
-    console.log('[SW] Push data:', data);
 
     const options = {
       body: data.body || data.message || 'Nova atualização disponível',
@@ -161,9 +148,7 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification(
         data.title || 'Organização Financeira',
         options
-      ).then(() => {
-        console.log('[SW] Notification shown successfully');
-      }).catch((error) => {
+      ).catch((error) => {
         console.error('[SW] Failed to show notification:', error);
       })
     );
