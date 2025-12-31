@@ -1,6 +1,8 @@
 'use client';
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Pie, PieChart } from 'recharts';
+
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 
 interface ExpensesByCategoryChartProps {
   data: {
@@ -9,8 +11,6 @@ interface ExpensesByCategoryChartProps {
     color?: string | null;
   }[];
 }
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658'];
 
 export function ExpensesByCategoryChart({ data }: ExpensesByCategoryChartProps) {
   if (data.length === 0) {
@@ -22,38 +22,61 @@ export function ExpensesByCategoryChart({ data }: ExpensesByCategoryChartProps) 
   }
 
   const chartData = data.map((item, index) => ({
-    name: item.name,
+    category: item.name,
     value: item.value,
-    color: item.color || COLORS[index % COLORS.length],
+    fill: item.color || `hsl(var(--chart-${(index % 5) + 1}))`,
   }));
 
+  const chartConfig = chartData.reduce<ChartConfig>(
+    (acc, item) => {
+      acc[item.category] = {
+        label: item.category,
+        color: item.fill,
+      };
+      return acc;
+    },
+    {
+      value: {
+        label: 'Despesas',
+      },
+    }
+  );
+
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ChartContainer
+      config={chartConfig}
+      className="mx-auto aspect-square max-h-80"
+    >
       <PieChart>
-        <Pie
-          data={chartData}
-          cx="50%"
-          cy="50%"
-          labelLine={false}
-          label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-          outerRadius={80}
-          fill="#8884d8"
-          dataKey="value"
-        >
-          {chartData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip
-          formatter={(value) =>
-            new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            }).format(Number(value) || 0)
+        <ChartTooltip
+          cursor={false}
+          content={
+            <ChartTooltipContent
+              hideLabel
+              formatter={(value) =>
+                new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                }).format(Number(value) || 0)
+              }
+            />
           }
         />
-        <Legend />
+
+        <Pie
+          data={chartData}
+          dataKey="value"
+          nameKey="category"
+          innerRadius={70}
+          outerRadius={110}
+          strokeWidth={2}
+        />
+
+        <ChartLegend
+          content={<ChartLegendContent nameKey="category" />}
+          className="-translate-y-2 flex-wrap gap-2 *:basis-1/2 *:justify-center"
+        />
       </PieChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }

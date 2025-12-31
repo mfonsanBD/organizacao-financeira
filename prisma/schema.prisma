@@ -33,13 +33,14 @@ model Family {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users         User[]
-  incomes       Income[]
-  expenses      Expense[]
-  categories    Category[]
-  budgets       Budget[]
-  receivables   Receivable[]
-  notifications Notification[]
+  users              User[]
+  incomes            Income[]
+  expenses           Expense[]
+  categories         Category[]
+  budgets            Budget[]
+  receivables        Receivable[]
+  notifications      Notification[]
+  transactionEntries TransactionEntry[]
 
   @@map("families")
 }
@@ -91,10 +92,36 @@ model Income {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  transactionEntries TransactionEntry[]
 
   @@index([familyId])
   @@map("incomes")
+}
+
+model TransactionEntry {
+  id         String          @id @default(cuid())
+  familyId   String
+  type       TransactionType
+  incomeId   String? // se for receita
+  expenseId  String? // se for despesa
+  categoryId String?
+  date       DateTime
+  amount     Float
+  note       String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  income   Income?   @relation(fields: [incomeId], references: [id], onDelete: Cascade)
+  expense  Expense?  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([familyId, date])
+  @@index([incomeId, date])
+  @@index([expenseId, date])
+  @@index([categoryId])
+  @@map("transaction_entries")
 }
 
 // Category (categorias de despesas)
@@ -106,9 +133,10 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  expenses Expense[]
-  budgets  Budget[]
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  expenses           Expense[]
+  budgets            Budget[]
+  transactionEntries TransactionEntry[]
 
   @@index([familyId])
   @@map("categories")
@@ -127,8 +155,9 @@ model Expense {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  category           Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  transactionEntries TransactionEntry[]
 
   @@index([familyId])
   @@index([categoryId])

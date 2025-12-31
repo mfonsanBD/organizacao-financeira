@@ -5,14 +5,17 @@ import { ReactQueryProvider } from '@/components/providers/react-query-provider'
 import { OfflineSyncProvider } from '@/components/providers/offline-sync-provider';
 import { ServiceWorkerRegister } from '@/components/providers/service-worker-register';
 import { Toaster } from '@/components/ui/sonner';
-import { Geist, Geist_Mono } from "next/font/google";
+import { Lexend, Poppins } from "next/font/google";
 
-const geist = Geist({ 
+const lexend = Lexend({ 
   subsets: ["latin"],
+  variable: "--font-lexend",
 });
 
-const geistMono = Geist_Mono({ 
+const poppins = Poppins({ 
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
 });
 
 export const metadata: Metadata = {
@@ -37,13 +40,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${geist.className} ${geistMono.className} antialiased`}>
+      <body className={`${lexend.variable} ${poppins.variable} font-poppins antialiased`}>
         <AuthProvider>
           <ReactQueryProvider>
             <OfflineSyncProvider>
               <ServiceWorkerRegister />
               {children}
-              <Toaster />
+              <Toaster richColors theme='light' />
             </OfflineSyncProvider>
           </ReactQueryProvider>
         </AuthProvider>

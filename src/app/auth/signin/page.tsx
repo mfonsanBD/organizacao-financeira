@@ -61,8 +61,8 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Entrar</CardTitle>
+        <CardHeader className='gap-0'>
+          <CardTitle className='font-lexend uppercase text-lg'>Entrar</CardTitle>
           <CardDescription>Entre com sua conta para acessar o sistema</CardDescription>
         </CardHeader>
         <CardContent>
@@ -73,7 +73,7 @@ export default function SignInPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>E-mail:</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -91,7 +91,7 @@ export default function SignInPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha</FormLabel>
+                    <FormLabel>Senha:</FormLabel>
                     <FormControl>
                       <Input
                         type="password"

@@ -46,6 +46,23 @@ export async function createExpense(data: CreateExpenseInput) {
       },
     });
 
+    // Cria TransactionEntry para histórico
+    try {
+      await prisma.transactionEntry.create({
+        data: {
+          familyId: user.familyId,
+          type: 'EXPENSE',
+          expenseId: expense.id,
+          categoryId: expense.categoryId,
+          date: expense.paymentDate,
+          amount: expense.amount,
+          note: 'Lançamento automático ao criar despesa',
+        },
+      });
+    } catch (err) {
+      console.error('Falha ao criar TransactionEntry automático (expense):', err);
+    }
+
     // Create notification for family members
     await createNotificationForFamily({
       title: '💸 Nova Despesa Registrada',
@@ -136,6 +153,29 @@ export async function updateExpense(id: string, data: UpdateExpenseInput) {
         category: true,
       },
     });
+
+    // Cria TransactionEntry para histórico se valor ou data mudou
+    if (
+      (typeof validatedData.amount === 'number' && existingExpense.amount !== validatedData.amount) ||
+      (validatedData.paymentDate &&
+        new Date(existingExpense.paymentDate).getTime() !== new Date(validatedData.paymentDate).getTime())
+    ) {
+      try {
+        await prisma.transactionEntry.create({
+          data: {
+            familyId: user.familyId,
+            type: 'EXPENSE',
+            expenseId: expense.id,
+            categoryId: expense.categoryId,
+            date: expense.paymentDate,
+            amount: expense.amount,
+            note: 'Lançamento automático ao editar despesa',
+          },
+        });
+      } catch (err) {
+        console.error('Falha ao criar TransactionEntry automático (update expense):', err);
+      }
+    }
 
     revalidatePath('/dashboard');
     revalidatePath('/expense');

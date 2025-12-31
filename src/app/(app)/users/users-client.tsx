@@ -83,7 +83,7 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
   return (
     <TooltipProvider>
       <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col-reverse md:flex-row items-start md:items-center justify-between gap-2">
           <div>
             <h1 className="text-3xl font-bold">Usuários</h1>
             <p className="text-muted-foreground">Gerencie os membros da família</p>
@@ -149,11 +149,11 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
             </Card>
           ) : (
             users.map((user) => (
-              <Card key={user.id} className={user.id === currentUserId ? 'border-teal-500 border-2' : ''}>
-                <CardContent className="p-6">
-                  <div className="flex items-end justify-between">
+              <Card key={user.id} className={`py-4 md:py-6 ${user.id === currentUserId ? 'border-teal-500 border-2' : ''}`}>
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-2">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col-reverse md:flex-row items-start md:items-center gap-2">
                         <h3 className="text-lg font-semibold">{user.name}</h3>
                         {user.id === currentUserId && (
                           <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded">

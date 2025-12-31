@@ -155,8 +155,8 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
     return expensesByCategory
       .filter((cat) => cat.expenses.length > 0)
       .map((category) => (
-        <Card key={category.id}>
-          <CardHeader>
+        <Card key={category.id} className='py-4 md:py-6'>
+          <CardHeader className='px-4 md:px-6'>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {category.color && (
@@ -175,16 +175,16 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
               </span>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-4 md:px-6">
             {category.expenses.map((expense) => (
               <div
                 key={expense.id}
-                className="flex items-center justify-between p-3 border rounded hover:bg-gray-50 transition-colors"
+                className="flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded hover:bg-gray-50 transition-colors"
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-1 items-center gap-2">
                     {expense.isRecurring && <Repeat className="h-4 w-4 text-zinc-600" />}
-                    <h4 className="font-medium">{expense.description}</h4>
+                    <h4 className="flex-1 font-medium">{expense.description}</h4>
                     {expense.isRecurring && (
                       <span className="text-xs bg-zinc-100 text-zinc-700 px-2 py-1 rounded-sm">
                         {expense.recurrence === 'MONTHLY' ? 'Mensal' : expense.recurrence === 'YEARLY' ? 'Anual' : 'Personalizado'}
@@ -259,7 +259,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
   return (
     <TooltipProvider>
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col-reverse md:col-row items-start md:items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold">Despesas</h1>
           <p className="text-muted-foreground">
@@ -325,14 +325,14 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
         </Card>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-6" suppressHydrationWarning>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">Todas ({expenses.length})</TabsTrigger>
-          <TabsTrigger value="recurring">
+      <Tabs defaultValue="all" className="space-y-2" suppressHydrationWarning>
+        <TabsList className="flex flex-col gap-2 w-full md:grid md:grid-cols-3 md:gap-0 h-fit">
+          <TabsTrigger value="all" className="w-full justify-start md:justify-center">Todas ({expenses.length})</TabsTrigger>
+          <TabsTrigger value="recurring" className="w-full justify-start md:justify-center">
             <Repeat className="h-4 w-4 mr-2" />
             Recorrentes ({recurringExpenses.length})
           </TabsTrigger>
-          <TabsTrigger value="onetime">
+          <TabsTrigger value="onetime" className="w-full justify-start md:justify-center">
             <Calendar className="h-4 w-4 mr-2" />
             Avulsas ({oneTimeExpenses.length})
           </TabsTrigger>

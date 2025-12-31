@@ -62,13 +62,14 @@ export function CategoriesClient({ categories }: CategoriesClientProps) {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col-reverse md:flex-row items-start md:items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold">Categorias</h1>
           <p className="text-muted-foreground">
             Organize suas despesas por categorias personalizadas
           </p>
         </div>
+
         {isAdmin && (
           <Button onClick={() => setFormOpen(true)}>
             <Plus className="h-4 w-4" />
