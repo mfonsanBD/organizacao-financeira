@@ -184,20 +184,20 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
                 <div className="flex-1">
                   <div className="flex flex-1 items-center gap-2">
                     {expense.isRecurring && <Repeat className="h-4 w-4 text-zinc-600" />}
-                    <h4 className="flex-1 font-medium">{expense.description}</h4>
+                    <h4 className="font-medium">{expense.description}</h4>
                     {expense.isRecurring && (
                       <span className="text-xs bg-zinc-100 text-zinc-700 px-2 py-1 rounded-sm">
                         {expense.recurrence === 'MONTHLY' ? 'Mensal' : expense.recurrence === 'YEARLY' ? 'Anual' : 'Personalizado'}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
                     <Calendar className="h-3 w-3" />
                     {new Date(expense.paymentDate).toLocaleDateString('pt-BR')}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-2 md:mt-0">
                   <span className="text-lg font-semibold mr-4">
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
@@ -259,7 +259,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
   return (
     <TooltipProvider>
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col-reverse md:col-row items-start md:items-center justify-between gap-2">
+      <div className="flex flex-col-reverse md:flex-row items-start md:items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold">Despesas</h1>
           <p className="text-muted-foreground">

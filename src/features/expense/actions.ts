@@ -163,16 +163,16 @@ export async function updateExpense(id: string, data: UpdateExpenseInput) {
     ) {
       try {
         await prisma.transactionEntry.create({
-          data: {
+            data: {
             familyId: user.familyId,
             type: 'EXPENSE',
             expenseId: expense.id,
-            categoryId: expense.categoryId,
-            date: expense.paymentDate,
-            amount: expense.amount,
-            note: 'Lançamento automático ao editar despesa',
-          },
-        });
+              categoryId: expense.categoryId,
+              date: expense.paymentDate,
+              amount: expense.amount,
+              note: 'Lançamento automático ao editar despesa',
+            },
+          });
       } catch (err) {
         console.error('Falha ao criar TransactionEntry automático (update expense):', err);
       }
@@ -215,6 +215,16 @@ export async function deleteExpense(id: string) {
     await prisma.expense.delete({
       where: { id },
     });
+
+    const entry = await prisma.transactionEntry.findFirst({
+      where: { expenseId: id },
+    });
+
+    if (entry) {
+      await prisma.transactionEntry.delete({
+        where: { id: entry.id },
+      });
+    }
 
     revalidatePath('/dashboard');
     revalidatePath('/expense');
