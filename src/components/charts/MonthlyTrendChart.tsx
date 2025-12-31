@@ -1,23 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 'use client';
 
-import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
+import { Bar, BarChart, ResponsiveContainer, XAxis } from 'recharts';
+import { ChartConfig, ChartContainer, ChartTooltip } from '../ui/chart';
 import { cn } from '@/lib/utils';
+
 function AdvancedTooltipContent({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
-
-  // Calcula o total (superavit ou deficit)
-  let total = 0;
-  let receitas = 0;
-  let despesas = 0;
-  payload.forEach((entry: any) => {
-    if (entry.dataKey === 'receitas') receitas = Number(entry.value) || 0;
-    if (entry.dataKey === 'despesas') despesas = Number(entry.value) || 0;
-  });
-  total = receitas - despesas;
 
   return (
     <div className={cn(
@@ -45,19 +35,6 @@ function AdvancedTooltipContent({ active, payload, label }: any) {
           </div>
         ))}
       </div>
-      <div className={cn(
-        "mt-2 pt-2 border-t text-xs font-semibold flex justify-between",
-        total < 0 ? 'text-red-600' : total === 0 ? 'text-zinc-500' : 'text-teal-700'
-      )}>
-        <span>Total:</span>
-        <span>
-          {total < 0 ? '- ' : ''}
-          {new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-          }).format(Math.abs(total))}
-        </span>
-      </div>
     </div>
   );
 }
@@ -65,13 +42,20 @@ function AdvancedTooltipContent({ active, payload, label }: any) {
 interface MonthlyTrendChartProps {
   data: {
     label: string;
-    receitas: number;
     despesas: number;
   }[];
 }
 
+const chartConfig = {
+  despesas: {
+    label: 'Despesas',
+    color: '#E7000B',
+  },
+} satisfies ChartConfig
+
 export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
-  if (data.length === 0) {
+  const filteredData = data.filter((item) => item.despesas > 0);
+  if (filteredData.length === 0) {
     return (
       <div className="flex items-center justify-center h-75 text-muted-foreground">
         Nenhum dado para exibir
@@ -79,76 +63,20 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
     );
   }
 
-  const chartConfig = {
-    receitas: {
-      label: 'Receitas',
-      color: '#009689',
-    },
-    despesas: {
-      label: 'Despesas',
-      color: '#E7000B',
-    },
-  } satisfies ChartConfig;
-
   return (
-    <Card className="bg-white border border-gray-100">
-      <CardHeader className="border-b border-gray-100 pb-4!">
-        <CardTitle className="text-lg font-semibold text-gray-900">
-          Tendência no Período
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <ChartContainer config={chartConfig} className="h-80 w-full">
-          <AreaChart data={data} margin={{ left: 12, right: 12 }}>
-            <defs>
-              <linearGradient id="fillReceitas" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#009689" stopOpacity={0.7} />
-                <stop offset="95%" stopColor="#009689" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="fillDespesas" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#E7000B" stopOpacity={0.7} />
-                <stop offset="95%" stopColor="#E7000B" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={24}
-            />
-
+    <ChartContainer config={chartConfig}>
+      <div className="w-full h-48 md:h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={filteredData}>
+            <XAxis dataKey="label" stroke="#888888" fontSize={12} />
             <ChartTooltip
               cursor={false}
               content={AdvancedTooltipContent}
             />
-
-            <Area
-              dataKey="receitas"
-              name="Receitas"
-              type="monotone"
-              fill="url(#fillReceitas)"
-              stroke="var(--color-receitas)"
-              strokeWidth={2}
-              dot={false}
-            />
-
-            <Area
-              dataKey="despesas"
-              name="Despesas"
-              type="monotone"
-              fill="url(#fillDespesas)"
-              stroke="var(--color-despesas)"
-              strokeWidth={2}
-              dot={false}
-            />
-
-            <ChartLegend content={<ChartLegendContent />} />
-          </AreaChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+            <Bar dataKey="despesas" fill="#E7000B" radius={[4, 4, 0, 0]} name="Despesas" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </ChartContainer>
   );
 }

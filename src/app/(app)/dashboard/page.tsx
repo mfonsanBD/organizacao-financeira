@@ -9,50 +9,50 @@ import { DashboardClient } from './dashboard-client';
 import { eachDayOfInterval, eachMonthOfInterval, endOfDay, format, startOfDay, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 
-function buildTrendSeries(entries: Array<{ type: string; amount: number; date: Date }>, startDate: Date, endDate: Date): Array<{ label: string; receitas: number; despesas: number }> {
+function buildExpenseTrendSeries(
+  entries: Array<{ type: string; amount: number; date: Date }>,
+  startDate: Date,
+  endDate: Date
+): Array<{ label: string; despesas: number }> {
   const start = startOfDay(startDate);
   const end = endOfDay(endDate);
   const diffDays = Math.max(0, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
   const useDaily = diffDays <= 60;
 
   if (useDaily) {
-    const byDay = new Map<string, { receitas: number; despesas: number }>();
+    const byDay = new Map<string, number>();
     for (const entry of entries) {
+      if (entry.type !== 'EXPENSE') continue;
       const key = format(entry.date, 'yyyy-MM-dd');
-      const prev = byDay.get(key) || { receitas: 0, despesas: 0 };
-      if (entry.type === 'INCOME') prev.receitas += entry.amount;
-      if (entry.type === 'EXPENSE') prev.despesas += entry.amount;
-      byDay.set(key, prev);
+      const prev = byDay.get(key) || 0;
+      byDay.set(key, prev + entry.amount);
     }
-    return eachDayOfInterval({ start, end }).map((date) => {
+    return eachDayOfInterval({ start, end }).map((date: Date) => {
       const key = format(date, 'yyyy-MM-dd');
-      const val = byDay.get(key) || { receitas: 0, despesas: 0 };
+      const despesas = byDay.get(key) || 0;
       return {
         label: format(date, 'dd MMM', { locale: ptBR }),
-        receitas: val.receitas,
-        despesas: val.despesas,
+        despesas,
       };
     });
   }
 
   // Mensal
-  const byMonth = new Map<string, { receitas: number; despesas: number }>();
+  const byMonth = new Map<string, number>();
   for (const entry of entries) {
+    if (entry.type !== 'EXPENSE') continue;
     const key = format(entry.date, 'yyyy-MM');
-    const prev = byMonth.get(key) || { receitas: 0, despesas: 0 };
-    if (entry.type === 'INCOME') prev.receitas += entry.amount;
-    if (entry.type === 'EXPENSE') prev.despesas += entry.amount;
-    byMonth.set(key, prev);
+    const prev = byMonth.get(key) || 0;
+    byMonth.set(key, prev + entry.amount);
   }
   const startMonth = startOfMonth(start);
   const endMonth = startOfMonth(end);
-  return eachMonthOfInterval({ start: startMonth, end: endMonth }).map((monthDate) => {
+  return eachMonthOfInterval({ start: startMonth, end: endMonth }).map((monthDate: Date) => {
     const key = format(monthDate, 'yyyy-MM');
-    const val = byMonth.get(key) || { receitas: 0, despesas: 0 };
+    const despesas = byMonth.get(key) || 0;
     return {
       label: format(monthDate, 'MMM/yy', { locale: ptBR }),
-      receitas: val.receitas,
-      despesas: val.despesas,
+      despesas,
     };
   });
 }
@@ -77,7 +77,7 @@ async function getDashboardData(startDate: Date, endDate: Date) {
   const incomesCount = entries.filter((e) => e.type === 'INCOME').length;
   const expensesCount = entries.filter((e) => e.type === 'EXPENSE').length;
 
-  const monthlyTrendData = buildTrendSeries(entries, startDate, endDate);
+  const monthlyTrendData = buildExpenseTrendSeries(entries, startDate, endDate);
 
   const categoriesResult = await listCategories();
   const expensesByCategory =

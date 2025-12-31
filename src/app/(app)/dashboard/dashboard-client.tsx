@@ -23,7 +23,6 @@ type DashboardData = {
   expensesCount: number;
   monthlyTrendData: Array<{
     label: string;
-    receitas: number;
     despesas: number;
   }>;
   expensesByCategory: Array<{
@@ -137,15 +136,15 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-gray-100 transition-all">
+        <Card className={`${data.balance >= 0 ? 'bg-teal-600' : 'bg-red-600'} border border-gray-100 transition-all`}>
           <CardContent className="p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className={`p-2.5 rounded ${data.balance >= 0 ? 'bg-teal-100' : 'bg-amber-100'}`}>
-                <PiggyBank className={`h-5 w-5 ${data.balance >= 0 ? 'text-teal-600' : 'text-amber-600'}`} />
+              <div className={`p-2.5 rounded ${data.balance >= 0 ? 'bg-teal-100' : 'bg-red-100'}`}>
+                <PiggyBank className={`h-5 w-5 ${data.balance >= 0 ? 'text-teal-600' : 'text-red-600'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 mb-1">Saldo</p>
-                <h3 className={`text-2xl font-bold truncate ${data.balance >= 0 ? 'text-teal-600' : 'text-amber-600'}`}>
+                <p className="text-xs font-medium text-white mb-1">Saldo</p>
+                <h3 className={`text-2xl font-bold truncate text-white`}>
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
@@ -153,7 +152,7 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
                 </h3>
               </div>
             </div>
-            <p className="text-xs text-gray-500 font-medium">
+            <p className="text-xs text-white font-medium">
               {data.balance >= 0 ? '↗ Positivo' : '↘ Negativo'} no período
             </p>
           </CardContent>
@@ -162,7 +161,16 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         {/* Monthly Trend Chart */}
-        <MonthlyTrendChart data={data.monthlyTrendData} />
+        <Card className="bg-white border border-gray-100">
+          <CardHeader className="border-b border-gray-100 pb-4!">
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              Despesas no Período
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <MonthlyTrendChart data={data.monthlyTrendData} />
+          </CardContent>
+        </Card>
 
         {/* Expenses by Category Chart */}
         <Card className="bg-white border border-gray-100">
