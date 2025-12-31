@@ -49,6 +49,7 @@ export async function createIncome(data: CreateIncomeInput) {
           date: receivedAt,
           amount: income.amount,
           note: 'Lançamento automático ao criar receita',
+          createdById: user.id
         },
       });
     } catch (err) {

@@ -92,16 +92,47 @@ async function getDashboardData(startDate: Date, endDate: Date) {
       })
       .filter((item: any) => item.value > 0) || [];
 
+  const expenses = await prisma.transactionEntry.findMany({
+    where: {
+      familyId,
+      type: 'EXPENSE',
+      date: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    select: {
+      amount: true,
+      date: true,
+      expense: {
+        select: {
+          description: true,
+          category: { 
+            select: { 
+              name: true 
+            } 
+          } 
+        },
+      },
+      createdBy: {
+        select: {
+          name: true
+        }
+      }
+    }
+  });
+
   return {
     totalIncome,
     totalExpenses,
     balance,
-    balanceChangePercentage: 0, // ajuste se quiser comparar meses
+    balanceChangePercentage: 0,
     incomesCount,
     expensesCount,
     monthlyTrendData,
     expensesByCategory,
     isEmpty: entries.length === 0,
+    expenses
   };
 }
 

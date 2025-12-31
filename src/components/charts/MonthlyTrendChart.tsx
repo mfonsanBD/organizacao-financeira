@@ -92,7 +92,7 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
 
   return (
     <Card className="bg-white border border-gray-100">
-      <CardHeader className="border-b border-gray-100 pb-4">
+      <CardHeader className="border-b border-gray-100 pb-4!">
         <CardTitle className="text-lg font-semibold text-gray-900">
           Tendência no Período
         </CardTitle>

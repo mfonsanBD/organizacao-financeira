@@ -57,6 +57,7 @@ export async function createExpense(data: CreateExpenseInput) {
           date: expense.paymentDate,
           amount: expense.amount,
           note: 'Lançamento automático ao criar despesa',
+          createdById: user.id
         },
       });
     } catch (err) {

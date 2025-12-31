@@ -56,10 +56,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  family            Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  sessions          Session[]
-  notifications     Notification[]
-  pushSubscriptions PushSubscription[]
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  sessions           Session[]
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
+  transactionEntries TransactionEntry[]
 
   @@index([familyId])
   @@index([email])
@@ -100,22 +101,24 @@ model Income {
 }
 
 model TransactionEntry {
-  id         String          @id @default(cuid())
-  familyId   String
-  type       TransactionType
-  incomeId   String? // se for receita
-  expenseId  String? // se for despesa
-  categoryId String?
-  date       DateTime
-  amount     Float
-  note       String?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id          String          @id @default(cuid())
+  familyId    String
+  createdById String          @default("cmjbnm3690001f0gj0efp248h")
+  type        TransactionType
+  incomeId    String?
+  expenseId   String?
+  categoryId  String?
+  date        DateTime
+  amount      Float
+  note        String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  income   Income?   @relation(fields: [incomeId], references: [id], onDelete: Cascade)
-  expense  Expense?  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  income    Income?   @relation(fields: [incomeId], references: [id], onDelete: Cascade)
+  expense   Expense?  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  category  Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([familyId, date])
   @@index([incomeId, date])
@@ -149,7 +152,7 @@ model Expense {
   amount      Float
   categoryId  String
   familyId    String
-  paymentDate DateTime // Data de pagamento efetiva
+  paymentDate DateTime
   isRecurring Boolean         @default(false)
   recurrence  RecurrenceType?
   createdAt   DateTime        @default(now())

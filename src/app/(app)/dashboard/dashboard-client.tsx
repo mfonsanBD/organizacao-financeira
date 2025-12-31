@@ -12,6 +12,8 @@ import type { DateRange } from 'react-day-picker';
 
 type Preset = 'day' | 'week' | 'month' | 'year';
 
+import { ExpensesDataTable, Expense } from '@/features/expense/ExpensesDataTable';
+
 type DashboardData = {
   totalIncome: number;
   totalExpenses: number;
@@ -29,6 +31,7 @@ type DashboardData = {
     value: number;
     color: string;
   }>;
+  expenses: Expense[];
   isEmpty: boolean;
 };
 
@@ -87,38 +90,6 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
           disabled={isPending}
         />
       </div>
-
-      {/* Main Balance Card */}
-      <Card className="bg-linear-to-br from-teal-700 to-teal-800 border-0 rounded-lg overflow-hidden">
-        <CardContent className="p-6 lg:p-8">
-          <div className="flex flex-col gap-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-teal-200 text-sm font-medium mb-3">Saldo Total</p>
-                <h2 className="text-4xl lg:text-5xl font-bold text-white mb-2">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(data.balance)}
-                </h2>
-                <p className="text-sm font-medium">
-                  {data.balance >= 0 ? (
-                    <span className="inline-flex items-center gap-1 text-teal-300">
-                      <span>
-                        {data.balanceChangePercentage >= 0 ? '↗' : '↘'} {Math.abs(data.balanceChangePercentage).toFixed(2)}%
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-red-300">
-                      <span>↘ Déficit</span>
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -194,17 +165,25 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
         <MonthlyTrendChart data={data.monthlyTrendData} />
 
         {/* Expenses by Category Chart */}
-        {data.expensesByCategory.length > 0 && (
-          <Card className="bg-white border border-gray-100">
-            <CardHeader className="border-b border-gray-100 pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-900">Despesas por Categoria</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ExpensesByCategoryChart data={data.expensesByCategory} />
-            </CardContent>
-          </Card>
-        )}
+        <Card className="bg-white border border-gray-100">
+          <CardHeader className="border-b border-gray-100 pb-4!">
+            <CardTitle className="text-lg font-semibold text-gray-900">Despesas por Categoria</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <ExpensesByCategoryChart data={data.expensesByCategory} />
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Expenses DataTable */}
+      <Card className="bg-white border border-gray-100">
+        <CardHeader className="border-b border-gray-100 pb-4!">
+          <CardTitle className="text-lg font-semibold text-gray-900">Lista das Despesas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ExpensesDataTable expenses={data.expenses ?? []} loading={isPending} />
+        </CardContent>
+      </Card>
 
       {/* Empty state */}
       {data.isEmpty && (
