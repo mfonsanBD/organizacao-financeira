@@ -9,6 +9,11 @@ import { DashboardClient } from './dashboard-client';
 
 import { eachDayOfInterval, eachMonthOfInterval, endOfDay, format, startOfDay, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: `Painel de Controle - Organização Financeira`,
+}
 
 function buildExpenseTrendSeries(
   entries: Array<{ type: string; amount: number; date: Date }>,
