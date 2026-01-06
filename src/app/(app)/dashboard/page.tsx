@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { listCategories } from '@/features/expense/actions';
+import { getInvestmentSummary } from '@/features/investment/actions';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
@@ -143,10 +144,18 @@ async function getDashboardData(startDate: Date, endDate: Date) {
       })
       .filter((item: any) => item.value > 0) || [];
 
+  // Buscar resumo de investimentos
+  const investmentResult = await getInvestmentSummary({
+    startDate,
+    endDate,
+  });
+  const investmentBalance = Number(investmentResult.data?.balance) || 0;
+
   return {
     totalIncome,
     totalExpenses,
     balance,
+    investmentBalance,
     balanceChangePercentage: 0,
     incomesCount,
     expensesCount,

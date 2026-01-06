@@ -16,6 +16,7 @@ import {
   Bell,
   BarChart3,
   Users,
+  Wallet,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -29,6 +30,7 @@ const allNavigation = [
   { name: 'Painel de Controle', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MEMBER'] },
   { name: 'Receita', href: '/income', icon: TrendingUp, roles: ['ADMIN', 'MEMBER'] },
   { name: 'Despesas', href: '/expense', icon: TrendingDown, roles: ['ADMIN', 'MEMBER'] },
+  { name: 'Investimentos', href: '/investment', icon: Wallet, roles: ['ADMIN', 'MEMBER'] },
   { name: 'Categorias', href: '/categories', icon: Palette, roles: ['ADMIN'] },
   { name: 'Usuários', href: '/users', icon: Users, roles: ['ADMIN'] },
   { name: 'Notificações', href: '/notifications', icon: Bell, roles: ['ADMIN', 'MEMBER'] },

@@ -157,7 +157,7 @@ export function DashboardFilterBar({ value, onChange, onApply, disabled }: Props
             <Button
               variant="outline"
               className={cn(
-                'w-fit h-12 justify-start text-left font-normal',
+                'w-fit justify-start text-left font-normal',
                 !range?.from && 'text-muted-foreground'
               )}
               disabled={disabled}

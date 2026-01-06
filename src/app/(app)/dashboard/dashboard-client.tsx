@@ -5,18 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExpensesByCategoryChart } from '@/components/charts/ExpensesByCategoryChart';
 import { MonthlyTrendChart } from '@/components/charts/MonthlyTrendChart';
 import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
-import { LayoutDashboard, PiggyBank, TrendingDown, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, PiggyBank, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { DashboardFilterBar } from './dashboard-filter-bar';
 import type { DateRange } from 'react-day-picker';
 
 type Preset = 'day' | 'week' | 'month' | 'year';
 
 import { ExpensesDataTable, Expense } from '@/features/expense/ExpensesDataTable';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 type DashboardData = {
   totalIncome: number;
   totalExpenses: number;
   balance: number;
+  investmentBalance: number;
   balanceChangePercentage: number;
   incomesCount: number;
   expensesCount: number;
@@ -91,10 +94,32 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
         />
       </div>
 
+      <Card className={`${data.balance >= 0 ? 'bg-teal-600' : 'bg-red-600'} border border-gray-100 transition-all`}>
+        <CardContent className="p-5">
+          <div className="flex items-start gap-3 mb-4">
+            <div className={`p-2.5 rounded ${data.balance >= 0 ? 'bg-teal-100' : 'bg-red-100'}`}>
+              <PiggyBank className={`h-5 w-5 ${data.balance >= 0 ? 'text-teal-600' : 'text-red-600'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-white mb-1">Saldo</p>
+              <h3 className={`text-2xl font-bold truncate text-white`}>
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                }).format(data.balance)}
+              </h3>
+            </div>
+          </div>
+          <p className="text-xs text-white font-medium">
+            {data.balance >= 0 ? '↗ Positivo' : '↘ Negativo'} no período
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
         <Card className="bg-white border border-gray-100 transition-all">
-          <CardContent className="p-5">
+          <CardContent className="p-5 pb-0">
             <div className="flex items-start gap-3 mb-4">
               <div className="p-2.5 bg-teal-100 rounded">
                 <TrendingUp className="h-5 w-5 text-teal-600" />
@@ -112,11 +137,16 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
             <p className="text-xs text-teal-600 font-medium">
               ↗ {data.incomesCount} fontes de renda
             </p>
+            <Button className="mt-4 w-full" variant="link" size="sm" asChild>
+              <Link href="/income">
+                Ver todas as receitas
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
         <Card className="bg-white border border-gray-100 transition-all">
-          <CardContent className="p-5">
+          <CardContent className="p-5 pb-0">
             <div className="flex items-start gap-3 mb-4">
               <div className="p-2.5 bg-red-100 rounded">
                 <TrendingDown className="h-5 w-5 text-red-600" />
@@ -134,28 +164,42 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
             <p className="text-xs text-red-600 font-medium">
               ↘ {data.expensesCount} transações
             </p>
+            
+            <Button className="mt-4 w-full" variant="link" size="sm" asChild>
+              <Link href="/expense">
+                Ver todas as despesas
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
-        <Card className={`${data.balance >= 0 ? 'bg-teal-600' : 'bg-red-600'} border border-gray-100 transition-all`}>
-          <CardContent className="p-5">
+        
+
+        <Card className="bg-white border border-gray-100 transition-all">
+          <CardContent className="p-5 pb-0">
             <div className="flex items-start gap-3 mb-4">
-              <div className={`p-2.5 rounded ${data.balance >= 0 ? 'bg-teal-100' : 'bg-red-100'}`}>
-                <PiggyBank className={`h-5 w-5 ${data.balance >= 0 ? 'text-teal-600' : 'text-red-600'}`} />
+              <div className="p-2.5 bg-blue-100 rounded">
+                <Wallet className="h-5 w-5 text-blue-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white mb-1">Saldo</p>
-                <h3 className={`text-2xl font-bold truncate text-white`}>
+                <p className="text-xs font-medium text-gray-500 mb-1">Investimentos</p>
+                <h3 className="text-2xl font-bold text-gray-900 truncate">
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
-                  }).format(data.balance)}
+                  }).format(Number(data.investmentBalance) || 0)}
                 </h3>
               </div>
             </div>
-            <p className="text-xs text-white font-medium">
-              {data.balance >= 0 ? '↗ Positivo' : '↘ Negativo'} no período
+            <p className="text-xs text-blue-600 font-medium">
+              {(Number(data.investmentBalance) || 0) >= 0 ? '↗ Saldo positivo' : '↘ Saldo negativo'}
             </p>
+            
+            <Button className="mt-4 w-full" variant="link" size="sm" asChild>
+              <Link href="/investment">
+                Ver todos os investimentos
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
