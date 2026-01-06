@@ -1,6 +1,8 @@
 import { listInvestments } from '@/features/investment/actions';
 import { InvestmentClient } from './investment-client';
 
+export const dynamic = 'force-dynamic';
+
 export default async function InvestmentPage() {
   const now = new Date();
   const currentYear = now.getUTCFullYear();
@@ -11,8 +13,8 @@ export default async function InvestmentPage() {
   const endDate = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59));
 
   const result = await listInvestments({
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
+    startDate,
+    endDate,
   });
 
   const investments = result.data || [];
@@ -25,8 +27,8 @@ export default async function InvestmentPage() {
     'use server';
 
     const result = await listInvestments({
-      startDate: filters.startDate,
-      endDate: filters.endDate,
+      startDate: new Date(filters.startDate),
+      endDate: new Date(filters.endDate),
     });
 
     return {
