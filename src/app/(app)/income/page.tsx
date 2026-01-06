@@ -3,6 +3,11 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { IncomeClient } from './income-client';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: `Receitas - Organização Financeira`,
+}
 
 export default async function IncomePage() {
   const session = await getServerSession(authOptions);

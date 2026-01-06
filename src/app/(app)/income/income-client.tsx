@@ -23,7 +23,6 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2, Plus, AlertTriangle, Copy } from 'lucide-react';
 import { DashboardFilterBar } from '../dashboard/dashboard-filter-bar';
-import { endOfMonth, startOfMonth } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 
 type Preset = 'day' | 'week' | 'month' | 'year';
