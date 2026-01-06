@@ -7,7 +7,6 @@ import { MonthlyTrendChart } from '@/components/charts/MonthlyTrendChart';
 import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { LayoutDashboard, PiggyBank, TrendingDown, TrendingUp } from 'lucide-react';
 import { DashboardFilterBar } from './dashboard-filter-bar';
-import { endOfMonth, startOfMonth } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 
 type Preset = 'day' | 'week' | 'month' | 'year';
@@ -45,9 +44,11 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
   const [isPending, startTransition] = useTransition();
   const defaultRange = useMemo<DateRange>(() => {
     const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
     return {
-      from: startOfMonth(now),
-      to: endOfMonth(now),
+      from: new Date(Date.UTC(year, month, 1, 0, 0, 0)),
+      to: new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)),
     };
   }, []);
 
@@ -109,7 +110,7 @@ export function DashboardClient({ userName, initialData, onFilterChange }: Props
               </div>
             </div>
             <p className="text-xs text-teal-600 font-medium">
-              ↗ {data.incomesCount} fontes ativas
+              ↗ {data.incomesCount} fontes de renda
             </p>
           </CardContent>
         </Card>

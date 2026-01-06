@@ -15,15 +15,11 @@ export async function syncWithBackend() {
     const unsyncedIncomes = await db.incomes.where('synced').equals(0).toArray();
     const unsyncedExpenses = await db.expenses.where('synced').equals(0).toArray();
     const unsyncedCategories = await db.categories.where('synced').equals(0).toArray();
-    const unsyncedBudgets = await db.budgets.where('synced').equals(0).toArray();
-    const unsyncedReceivables = await db.receivables.where('synced').equals(0).toArray();
 
     // Sync each entity type
     await syncEntities('incomes', unsyncedIncomes);
     await syncEntities('expenses', unsyncedExpenses);
     await syncEntities('categories', unsyncedCategories);
-    await syncEntities('budgets', unsyncedBudgets);
-    await syncEntities('receivables', unsyncedReceivables);
   } catch (error) {
     console.error('Sync failed:', error);
     throw error;
@@ -123,18 +119,6 @@ async function resolveConflictsAndUpdate(serverData: {
   if (serverData.categories) {
     for (const record of serverData.categories) {
       await syncRecord(db.categories, record, 'categories');
-    }
-  }
-
-  if (serverData.budgets) {
-    for (const record of serverData.budgets) {
-      await syncRecord(db.budgets, record, 'budgets');
-    }
-  }
-
-  if (serverData.receivables) {
-    for (const record of serverData.receivables) {
-      await syncRecord(db.receivables, record, 'receivables');
     }
   }
 }

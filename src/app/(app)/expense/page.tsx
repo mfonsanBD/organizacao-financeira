@@ -17,16 +17,26 @@ export default async function ExpensePage() {
 
   const [expensesResult, categoriesResult] = await Promise.all([
     listExpenses({
-      startDate: new Date(currentYear, currentMonth - 1, 1),
-      endDate: new Date(currentYear, currentMonth, 0, 23, 59, 59),
+      startDate: new Date(Date.UTC(currentYear, currentMonth - 1, 1, 0, 0, 0)),
+      endDate: new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59)),
     }),
     listCategories(),
   ]);
+
+  async function handleFilterChange(filters: { startDate: string; endDate: string }) {
+    'use server';
+    const result = await listExpenses({
+      startDate: new Date(filters.startDate),
+      endDate: new Date(filters.endDate),
+    });
+    return result;
+  }
 
   return (
     <ExpenseClient
       expenses={expensesResult.data || []}
       categories={categoriesResult.data || []}
+      onFilterChange={handleFilterChange}
     />
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,18 +19,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ExpenseForm } from '@/features/expense/components/ExpenseForm';
-import { deleteExpense } from '@/features/expense/actions';
+import { deleteExpense, updateExpenseStatus } from '@/features/expense/actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Plus, Repeat, Calendar, Copy, AlertTriangle } from 'lucide-react';
+import { Pencil, Trash2, Plus, Repeat, Calendar, Copy, AlertTriangle, CheckCircle2, Clock, Check } from 'lucide-react';
+import { DashboardFilterBar } from '../dashboard/dashboard-filter-bar';
+import type { DateRange } from 'react-day-picker';
+
+type Preset = 'day' | 'week' | 'month' | 'year';
 
 interface Expense {
   id: string;
   description: string;
   amount: number;
   paymentDate: Date;
+  status: string;
   isRecurring: boolean;
-  recurrence?: 'MONTHLY' | 'YEARLY' | 'CUSTOM' | null;
   category: {
     id: string;
     name: string;
@@ -47,10 +51,12 @@ interface Category {
 interface ExpenseClientProps {
   expenses: Expense[];
   categories: Category[];
+  onFilterChange: (filters: { startDate: string; endDate: string }) => Promise<{ success: boolean; data: Expense[]; error?: string }>;
 }
 
-export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
+export function ExpenseClient({ expenses: initialExpenses, categories, onFilterChange }: ExpenseClientProps) {
   const router = useRouter();
+  const [expenses, setExpenses] = useState(initialExpenses);
   const [formOpen, setFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<
     | {
@@ -60,13 +66,72 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
         categoryId: string;
         paymentDate: Date;
         isRecurring: boolean;
-        recurrence?: 'MONTHLY' | 'YEARLY' | 'CUSTOM' | null;
       }
     | undefined
   >();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+
+  const defaultRange = useMemo<DateRange>(() => {
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    return {
+      from: new Date(Date.UTC(year, month, 1, 0, 0, 0)),
+      to: new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)),
+    };
+  }, []);
+
+  const [filterState, setFilterState] = useState<{ preset: Preset; range: DateRange }>({
+    preset: 'month',
+    range: defaultRange,
+  });
+
+  const handleFilterApply = (range: { from: Date; to: Date }) => {
+    startTransition(async () => {
+      const result = await onFilterChange({
+        startDate: range.from.toISOString(),
+        endDate: range.to.toISOString(),
+      });
+
+      if (result.success && result.data) {
+        setExpenses(result.data);
+      } else {
+        toast.error(result.error || 'Erro ao filtrar despesas');
+      }
+    });
+  };
+
+  const handleToggleStatus = async (expense: Expense) => {
+    setUpdatingStatusId(expense.id);
+    const newStatus = expense.status === 'PENDING' ? 'COMPLETED' : 'PENDING';
+    
+    const result = await updateExpenseStatus(expense.id, newStatus);
+    
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(
+        newStatus === 'COMPLETED' 
+          ? 'Despesa marcada como paga!' 
+          : 'Despesa marcada como pendente!'
+      );
+      
+      // Update local state
+      setExpenses(prevExpenses =>
+        prevExpenses.map(e =>
+          e.id === expense.id ? { ...e, status: newStatus } : e
+        )
+      );
+      
+      router.refresh();
+    }
+    
+    setUpdatingStatusId(null);
+  };
 
   const handleDelete = async (id: string) => {
     setIsDeleting(true);
@@ -76,13 +141,15 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
       toast.error(result.error);
     } else {
       toast.success('Despesa excluída com sucesso!');
+      // Update local state
+      setExpenses(prevExpenses => prevExpenses.filter(e => e.id !== id));
       router.refresh();
     }
     
     setIsDeleting(false);
     setDeleteDialogOpen(false);
     setExpenseToDelete(null);
-  };
+  };;
 
   const openDeleteDialog = (expense: Expense) => {
     setExpenseToDelete(expense);
@@ -97,7 +164,6 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
       categoryId: expense.category.id,
       paymentDate: expense.paymentDate,
       isRecurring: expense.isRecurring,
-      recurrence: expense.recurrence,
     });
     setFormOpen(true);
   };
@@ -112,7 +178,6 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
       categoryId: expense.category.id,
       paymentDate: new Date(today.getFullYear(), today.getMonth(), new Date(expense.paymentDate).getDate()),
       isRecurring: expense.isRecurring,
-      recurrence: expense.recurrence,
     });
     setFormOpen(true);
   };
@@ -126,9 +191,15 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
   const recurringExpenses = expenses.filter((e) => e.isRecurring);
   const oneTimeExpenses = expenses.filter((e) => !e.isRecurring);
 
+  // Separar por status
+  const completedExpenses = expenses.filter((e) => e.status === 'COMPLETED');
+  const pendingExpenses = expenses.filter((e) => e.status === 'PENDING');
+
   const totalRecurring = recurringExpenses.reduce((sum, e) => sum + e.amount, 0);
   const totalOneTime = oneTimeExpenses.reduce((sum, e) => sum + e.amount, 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalCompleted = completedExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalPending = pendingExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   // Função para renderizar lista de despesas
   const renderExpenseList = (expenseList: Expense[]) => {
@@ -182,72 +253,103 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
                 className="flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded hover:bg-gray-50 transition-colors"
               >
                 <div className="flex-1">
-                  <div className="flex flex-1 items-center gap-2">
+                  <div className="flex flex-1 items-center gap-2 flex-wrap">
                     {expense.isRecurring && <Repeat className="h-4 w-4 text-zinc-600" />}
                     <h4 className="font-medium">{expense.description}</h4>
-                    {expense.isRecurring && (
-                      <span className="text-xs bg-zinc-100 text-zinc-700 px-2 py-1 rounded-sm">
-                        {expense.recurrence === 'MONTHLY' ? 'Mensal' : expense.recurrence === 'YEARLY' ? 'Anual' : 'Personalizado'}
+                    {expense.status === 'COMPLETED' ? (
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-sm flex items-center gap-1">
+                        <Check className="h-3 w-3" />
+                        Pago
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-sm flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Aguardando
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
                     <Calendar className="h-3 w-3" />
-                    {new Date(expense.paymentDate).toLocaleDateString('pt-BR')}
+                    {new Date(expense.paymentDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mt-2 md:mt-0">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-2 mt-2 md:mt-0">
                   <span className="text-lg font-semibold mr-4">
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     }).format(expense.amount)}
                   </span>
-                  {expense.isRecurring && (
+                  
+                  <div className='flex items-center gap-2'>
                     <Tooltip>
                       <TooltipTrigger asChild className='rounded'>
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => handleDuplicate(expense)}
+                          onClick={() => handleToggleStatus(expense)}
+                          disabled={updatingStatusId === expense.id}
+                          className={expense.status === 'COMPLETED' ? 'bg-emerald-50 hover:bg-emerald-100' : 'bg-yellow-50 hover:bg-yellow-100'}
                         >
-                          <Copy className="h-4 w-4 text-blue-600" />
+                          {updatingStatusId === expense.id ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                          ) : expense.status === 'COMPLETED' ? (
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-yellow-600" />
+                          )}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Duplicar para este mês</p>
+                        <p>{expense.status === 'COMPLETED' ? 'Marcar como pendente' : 'Marcar como pago'}</p>
                       </TooltipContent>
                     </Tooltip>
-                  )}
-                  <Tooltip>
-                    <TooltipTrigger asChild className='rounded'>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEdit(expense)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Editar despesa</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild className='rounded'>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => openDeleteDialog(expense)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Excluir despesa</p>
-                    </TooltipContent>
-                  </Tooltip>
+                    {expense.isRecurring && (
+                      <Tooltip>
+                        <TooltipTrigger asChild className='rounded'>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleDuplicate(expense)}
+                          >
+                            <Copy className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Duplicar para este mês</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    <Tooltip>
+                      <TooltipTrigger asChild className='rounded'>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEdit(expense)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Editar despesa</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild className='rounded'>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openDeleteDialog(expense)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Excluir despesa</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
             ))}
@@ -263,19 +365,29 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
         <div>
           <h1 className="text-3xl font-bold">Despesas</h1>
           <p className="text-muted-foreground">
-            Despesas de {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            Gerencie suas despesas do período selecionado
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Nova Despesa
-        </Button>
+
+        <div className="flex flex-col-reverse md:flex-row items-start md:items-center gap-4">
+          <DashboardFilterBar
+            value={filterState}
+            onChange={setFilterState}
+            onApply={handleFilterApply}
+            disabled={isPending}
+          />
+
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Nova Despesa
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Total do Mês</CardTitle>
+            <CardTitle className="text-sm font-medium">Total do Período</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">
@@ -284,7 +396,43 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
                 currency: 'BRL',
               }).format(totalExpenses)}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">{expenses.length} transações</p>
+            <p className="text-xs text-muted-foreground mt-1">{expenses.length} {expenses.length === 1 ? 'transação' : 'transações'}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              Pagas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-emerald-600">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              }).format(totalCompleted)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{completedExpenses.length} {completedExpenses.length === 1 ? 'despesa' : 'despesas'}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Clock className="h-4 w-4 text-yellow-600" />
+              Pendentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-yellow-600">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              }).format(totalPending)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{pendingExpenses.length} {pendingExpenses.length === 1 ? 'despesa' : 'despesas'}</p>
           </CardContent>
         </Card>
 
@@ -302,7 +450,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
                 currency: 'BRL',
               }).format(totalRecurring)}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">{recurringExpenses.length} despesas</p>
+            <p className="text-xs text-muted-foreground mt-1">{recurringExpenses.length} {recurringExpenses.length === 1 ? 'despesa' : 'despesas'}</p>
           </CardContent>
         </Card>
 
@@ -310,7 +458,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
           <CardHeader>
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Despesas Avulsas
+              Avulsas
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -320,7 +468,7 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
                 currency: 'BRL',
               }).format(totalOneTime)}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">{oneTimeExpenses.length} despesas</p>
+            <p className="text-xs text-muted-foreground mt-1">{oneTimeExpenses.length} {oneTimeExpenses.length === 1 ? 'despesa' : 'despesas'}</p>
           </CardContent>
         </Card>
       </div>
@@ -351,7 +499,20 @@ export function ExpenseClient({ expenses, categories }: ExpenseClientProps) {
         </TabsContent>
       </Tabs>
 
-      <ExpenseForm open={formOpen} onOpenChange={handleCloseForm} expense={editingExpense} />
+      <ExpenseForm 
+        open={formOpen} 
+        onOpenChange={handleCloseForm} 
+        expense={editingExpense}
+        onSuccess={async () => {
+          const result = await onFilterChange({
+            startDate: filterState.range.from?.toISOString() || '',
+            endDate: filterState.range.to?.toISOString() || '',
+          });
+          if (result.success && result.data) {
+            setExpenses(result.data);
+          }
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

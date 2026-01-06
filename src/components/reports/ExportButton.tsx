@@ -7,7 +7,7 @@ import { exportToExcel } from '@/features/report/actions';
 import { toast } from 'sonner';
 
 interface ExportButtonProps {
-  entity: 'expenses' | 'incomes' | 'budgets' | 'receivables' | 'categories';
+  entity: 'expenses' | 'incomes' | 'categories';
   startDate?: Date;
   endDate?: Date;
   filename?: string;
@@ -21,11 +21,9 @@ export function ExportButton({ entity, startDate, endDate, filename }: ExportBut
 
     try {
       // Map entity type to export type
-      const typeMap: Record<typeof entity, 'expenses' | 'incomes' | 'budgets' | 'receivables' | 'complete'> = {
+      const typeMap: Record<typeof entity, 'expenses' | 'incomes' | 'complete'> = {
         expenses: 'expenses',
         incomes: 'incomes',
-        budgets: 'budgets',
-        receivables: 'receivables',
         categories: 'complete', // Categories export as complete report
       };
 

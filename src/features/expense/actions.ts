@@ -24,9 +24,9 @@ export async function createExpense(data: CreateExpenseInput) {
     const user = await requireAuth();
     const validatedData = createExpenseSchema.parse(data);
 
-    // Verify category belongs to user's family
+    // Verify category belongs to user's
     const category = await prisma.category.findFirst({
-      where: { id: validatedData.categoryId, familyId: user.familyId },
+      where: { id: validatedData.categoryId },
     });
 
     if (!category) {
@@ -39,42 +39,22 @@ export async function createExpense(data: CreateExpenseInput) {
     const expense = await prisma.expense.create({
       data: {
         ...validatedData,
-        familyId: user.familyId,
       },
       include: {
         category: true,
       },
     });
 
-    // Cria TransactionEntry para histórico
-    try {
-      await prisma.transactionEntry.create({
-        data: {
-          familyId: user.familyId,
-          type: 'EXPENSE',
-          expenseId: expense.id,
-          categoryId: expense.categoryId,
-          date: expense.paymentDate,
-          amount: expense.amount,
-          note: 'Lançamento automático ao criar despesa',
-          createdById: user.id
-        },
-      });
-    } catch (err) {
-      console.error('Falha ao criar TransactionEntry automático (expense):', err);
-    }
-
-    // Create notification for family members
+    // Create notification for members
     await createNotificationForFamily({
       title: '💸 Nova Despesa Registrada',
       message: `${user.name} registrou: ${expense.description} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(expense.amount)} [${category.name}]`,
       link: '/expense',
     });
 
-    // Send push notification to all family members except the creator
+    // Send push notification to all members except the creator
     const familyMembers = await prisma.user.findMany({
       where: {
-        familyId: user.familyId,
         id: { not: user.id },
       },
       select: { id: true },
@@ -118,12 +98,10 @@ export async function createExpense(data: CreateExpenseInput) {
  */
 export async function updateExpense(id: string, data: UpdateExpenseInput) {
   try {
-    const user = await requireAuth();
     const validatedData = updateExpenseSchema.parse(data);
 
-    // Verify expense belongs to user's family
     const existingExpense = await prisma.expense.findFirst({
-      where: { id, familyId: user.familyId },
+      where: { id },
     });
 
     if (!existingExpense) {
@@ -133,10 +111,9 @@ export async function updateExpense(id: string, data: UpdateExpenseInput) {
       };
     }
 
-    // If updating category, verify it belongs to user's family
     if (validatedData.categoryId) {
       const category = await prisma.category.findFirst({
-        where: { id: validatedData.categoryId, familyId: user.familyId },
+        where: { id: validatedData.categoryId },
       });
 
       if (!category) {
@@ -155,29 +132,6 @@ export async function updateExpense(id: string, data: UpdateExpenseInput) {
       },
     });
 
-    // Cria TransactionEntry para histórico se valor ou data mudou
-    if (
-      (typeof validatedData.amount === 'number' && existingExpense.amount !== validatedData.amount) ||
-      (validatedData.paymentDate &&
-        new Date(existingExpense.paymentDate).getTime() !== new Date(validatedData.paymentDate).getTime())
-    ) {
-      try {
-        await prisma.transactionEntry.create({
-            data: {
-            familyId: user.familyId,
-            type: 'EXPENSE',
-            expenseId: expense.id,
-              categoryId: expense.categoryId,
-              date: expense.paymentDate,
-              amount: expense.amount,
-              note: 'Lançamento automático ao editar despesa',
-            },
-          });
-      } catch (err) {
-        console.error('Falha ao criar TransactionEntry automático (update expense):', err);
-      }
-    }
-
     revalidatePath('/dashboard');
     revalidatePath('/expense');
 
@@ -195,14 +149,54 @@ export async function updateExpense(id: string, data: UpdateExpenseInput) {
 }
 
 /**
+ * Update expense status
+ */
+export async function updateExpenseStatus(id: string, status: 'PENDING' | 'COMPLETED') {
+  try {
+    await requireAuth();
+
+    const existingExpense = await prisma.expense.findFirst({
+      where: { id },
+    });
+
+    if (!existingExpense) {
+      return {
+        success: false,
+        error: 'Despesa não encontrada',
+      };
+    }
+
+    const expense = await prisma.expense.update({
+      where: { id },
+      data: { status },
+      include: {
+        category: true,
+      },
+    });
+
+    revalidatePath('/dashboard');
+    revalidatePath('/expense');
+
+    return {
+      success: true,
+      data: expense,
+    };
+  } catch (error) {
+    console.error('Update expense status error:', error);
+    return {
+      success: false,
+      error: 'Erro ao atualizar status da despesa',
+    };
+  }
+}
+
+/**
  * Delete expense
  */
 export async function deleteExpense(id: string) {
   try {
-    const user = await requireAuth();
-
     const existingExpense = await prisma.expense.findFirst({
-      where: { id, familyId: user.familyId },
+      where: { id },
     });
 
     if (!existingExpense) {
@@ -215,16 +209,6 @@ export async function deleteExpense(id: string) {
     await prisma.expense.delete({
       where: { id },
     });
-
-    const entry = await prisma.transactionEntry.findFirst({
-      where: { expenseId: id },
-    });
-
-    if (entry) {
-      await prisma.transactionEntry.delete({
-        where: { id: entry.id },
-      });
-    }
 
     revalidatePath('/dashboard');
     revalidatePath('/expense');
@@ -250,11 +234,8 @@ export async function listExpenses(filters?: {
   endDate?: Date;
 }) {
   try {
-    const user = await requireAuth();
-
     const expenses = await prisma.expense.findMany({
       where: {
-        familyId: user.familyId,
         ...(filters?.categoryId && { categoryId: filters.categoryId }),
         ...(filters?.startDate &&
           filters?.endDate && {
@@ -289,13 +270,11 @@ export async function listExpenses(filters?: {
  */
 export async function createCategory(data: CreateCategoryInput) {
   try {
-    const user = await requireAuth();
     const validatedData = createCategorySchema.parse(data);
 
     const category = await prisma.category.create({
       data: {
         ...validatedData,
-        familyId: user.familyId,
       },
     });
 
@@ -321,10 +300,7 @@ export async function createCategory(data: CreateCategoryInput) {
  */
 export async function listCategories() {
   try {
-    const user = await requireAuth();
-
     const categories = await prisma.category.findMany({
-      where: { familyId: user.familyId },
       orderBy: { name: 'asc' },
     });
 
@@ -347,11 +323,10 @@ export async function listCategories() {
  */
 export async function updateCategory(id: string, data: UpdateCategoryInput) {
   try {
-    const user = await requireAuth();
     const validatedData = updateCategorySchema.parse(data);
 
     const existingCategory = await prisma.category.findFirst({
-      where: { id, familyId: user.familyId },
+      where: { id },
     });
 
     if (!existingCategory) {
@@ -388,10 +363,8 @@ export async function updateCategory(id: string, data: UpdateCategoryInput) {
  */
 export async function deleteCategory(id: string) {
   try {
-    const user = await requireAuth();
-
     const existingCategory = await prisma.category.findFirst({
-      where: { id, familyId: user.familyId },
+      where: { id },
     });
 
     if (!existingCategory) {

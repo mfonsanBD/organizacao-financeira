@@ -8,13 +8,11 @@ declare module 'next-auth' {
       name: string;
       email: string;
       role: Role;
-      familyId: string;
     };
   }
 
   interface User {
     role: Role;
-    familyId: string;
   }
 }
 
@@ -22,6 +20,5 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: Role;
-    familyId: string;
   }
 }

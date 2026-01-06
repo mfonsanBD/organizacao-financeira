@@ -26,16 +26,13 @@ type CreateUserInput = z.infer<typeof createUserSchema>;
 type UpdateUserInput = z.infer<typeof updateUserSchema>;
 
 /**
- * List all users in the family
+ * List all users
  */
 export async function listUsers() {
   try {
-    const user = await requireAuth();
+    await requireAuth();
 
     const users = await prisma.user.findMany({
-      where: {
-        familyId: user.familyId,
-      },
       select: {
         id: true,
         name: true,
@@ -67,7 +64,6 @@ export async function listUsers() {
  */
 export async function createUser(data: CreateUserInput) {
   try {
-    const currentUser = await requireAdmin();
     const validatedData = createUserSchema.parse(data);
 
     // Check if email already exists
@@ -91,7 +87,6 @@ export async function createUser(data: CreateUserInput) {
         email: validatedData.email,
         password: hashedPassword,
         role: validatedData.role,
-        familyId: currentUser.familyId,
       },
       select: {
         id: true,
@@ -125,9 +120,9 @@ export async function updateUser(id: string, data: UpdateUserInput) {
     const currentUser = await requireAdmin();
     const validatedData = updateUserSchema.parse(data);
 
-    // Verify user belongs to the same family
+    // Verify user exists
     const existingUser = await prisma.user.findFirst({
-      where: { id, familyId: currentUser.familyId },
+      where: { id },
     });
 
     if (!existingUser) {
@@ -219,9 +214,9 @@ export async function deleteUser(id: string) {
       };
     }
 
-    // Verify user belongs to the same family
+    // Verify user exists
     const existingUser = await prisma.user.findFirst({
-      where: { id, familyId: currentUser.familyId },
+      where: { id },
     });
 
     if (!existingUser) {

@@ -1,14 +1,12 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth/session';
 
 /**
  * Get monthly financial summary for the last N months
  */
 export async function getMonthlyTrend(months: number = 6) {
   try {
-    const user = await requireAuth();
     const now = new Date();
     const monthlyData = [];
 
@@ -23,15 +21,16 @@ export async function getMonthlyTrend(months: number = 6) {
       // Get incomes for the month
       const incomes = await prisma.income.findMany({
         where: {
-          familyId: user.familyId,
-          isActive: true,
+          paymentData: {
+            gte: startDate,
+            lte: endDate,
+          },
         },
       });
 
       // Get expenses for the month
       const expenses = await prisma.expense.findMany({
         where: {
-          familyId: user.familyId,
           paymentDate: {
             gte: startDate,
             lte: endDate,
@@ -70,7 +69,6 @@ export async function getMonthlyTrend(months: number = 6) {
  */
 export async function getMonthComparison() {
   try {
-    const user = await requireAuth();
     const now = new Date();
     
     // Current month
@@ -84,13 +82,14 @@ export async function getMonthComparison() {
     const [currentIncomes, currentExpenses, previousIncomes, previousExpenses] = await Promise.all([
       prisma.income.findMany({
         where: {
-          familyId: user.familyId,
-          isActive: true,
+          paymentData: {
+            gte: currentMonthStart,
+            lte: currentMonthEnd,
+          },
         },
       }),
       prisma.expense.findMany({
         where: {
-          familyId: user.familyId,
           paymentDate: {
             gte: currentMonthStart,
             lte: currentMonthEnd,
@@ -99,13 +98,14 @@ export async function getMonthComparison() {
       }),
       prisma.income.findMany({
         where: {
-          familyId: user.familyId,
-          isActive: true,
+          paymentData: {
+            gte: previousMonthStart,
+            lte: previousMonthEnd,
+          },
         },
       }),
       prisma.expense.findMany({
         where: {
-          familyId: user.familyId,
           paymentDate: {
             gte: previousMonthStart,
             lte: previousMonthEnd,

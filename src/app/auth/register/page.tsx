@@ -31,7 +31,6 @@ export default function RegisterPage() {
       name: '',
       email: '',
       password: '',
-      familyName: '',
     },
   });
 
@@ -77,7 +76,7 @@ export default function RegisterPage() {
         <CardHeader>
           <CardTitle>Criar Conta</CardTitle>
           <CardDescription>
-            Crie sua conta e comece a organizar suas finanças familiares
+            Crie sua conta e comece a organizar suas finanças
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -124,23 +123,6 @@ export default function RegisterPage() {
                       <Input
                         type="password"
                         placeholder="••••••••"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="familyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome da Família</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ex: Família Silva"
                         {...field}
                         disabled={isLoading}
                       />

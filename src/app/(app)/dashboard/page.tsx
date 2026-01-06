@@ -23,7 +23,8 @@ function buildExpenseTrendSeries(
     const byDay = new Map<string, number>();
     for (const entry of entries) {
       if (entry.type !== 'EXPENSE') continue;
-      const key = format(entry.date, 'yyyy-MM-dd');
+      // Usar toISOString para garantir UTC e pegar apenas a parte da data
+      const key = entry.date.toISOString().split('T')[0];
       const prev = byDay.get(key) || 0;
       byDay.set(key, prev + entry.amount);
     }
@@ -41,7 +42,8 @@ function buildExpenseTrendSeries(
   const byMonth = new Map<string, number>();
   for (const entry of entries) {
     if (entry.type !== 'EXPENSE') continue;
-    const key = format(entry.date, 'yyyy-MM');
+    // Usar toISOString para garantir UTC e pegar ano-mês
+    const key = entry.date.toISOString().substring(0, 7); // 'YYYY-MM'
     const prev = byMonth.get(key) || 0;
     byMonth.set(key, prev + entry.amount);
   }
@@ -60,15 +62,64 @@ function buildExpenseTrendSeries(
 async function getDashboardData(startDate: Date, endDate: Date) {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error('Não autenticado');
-  const familyId = session.user.familyId;
 
-  const entries = await prisma.transactionEntry.findMany({
-    where: {
-      familyId,
-      date: { gte: startDate, lte: endDate },
-    },
-    include: { category: true },
-  });
+  // Buscar incomes e expenses separadamente
+  const [incomes, expenses] = await Promise.all([
+    prisma.income.findMany({
+      where: {
+        paymentData: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      select: {
+        id: true,
+        amount: true,
+        description: true,
+        paymentData: true,
+      },
+    }),
+    prisma.expense.findMany({
+      where: {
+        paymentDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      orderBy: { paymentDate: 'desc' },
+      select: {
+        id: true,
+        amount: true,
+        description: true,
+        paymentDate: true,
+        categoryId: true,
+        status: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  // Transformar em entries unificadas para os gráficos
+  const entries = [
+    ...incomes.map((i) => ({
+      type: 'INCOME' as const,
+      amount: i.amount,
+      date: i.paymentData,
+      categoryId: null,
+    })),
+    ...expenses.map((e) => ({
+      type: 'EXPENSE' as const,
+      amount: e.amount,
+      date: e.paymentDate,
+      categoryId: e.categoryId,
+    })),
+  ];
 
   const totalIncome = entries.filter((e) => e.type === 'INCOME').reduce((sum: number, e) => sum + e.amount, 0);
   const totalExpenses = entries.filter((e) => e.type === 'EXPENSE').reduce((sum: number, e) => sum + e.amount, 0);
@@ -92,36 +143,6 @@ async function getDashboardData(startDate: Date, endDate: Date) {
       })
       .filter((item: any) => item.value > 0) || [];
 
-  const expenses = await prisma.transactionEntry.findMany({
-    where: {
-      familyId,
-      type: 'EXPENSE',
-      date: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-    select: {
-      amount: true,
-      date: true,
-      expense: {
-        select: {
-          description: true,
-          category: { 
-            select: { 
-              name: true 
-            } 
-          } 
-        },
-      },
-      createdBy: {
-        select: {
-          name: true
-        }
-      }
-    }
-  });
-
   return {
     totalIncome,
     totalExpenses,
@@ -132,7 +153,20 @@ async function getDashboardData(startDate: Date, endDate: Date) {
     monthlyTrendData,
     expensesByCategory,
     isEmpty: entries.length === 0,
-    expenses
+    expenses: expenses.map((e) => ({
+      amount: e.amount,
+      date: e.paymentDate,
+      expense: {
+        description: e.description,
+        category: {
+          name: e.category.name,
+        },
+        status: e.status,
+      },
+      createdBy: {
+        name: session.user.name,
+      },
+    })),
   };
 }
 
@@ -147,8 +181,9 @@ export default async function DashboardPage() {
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  const startDate = new Date(currentYear, currentMonth - 1, 1);
-  const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+  // Criar datas em UTC para evitar problemas de timezone
+  const startDate = new Date(Date.UTC(currentYear, currentMonth - 1, 1, 0, 0, 0));
+  const endDate = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59));
 
   const initialData = await getDashboardData(startDate, endDate);
 

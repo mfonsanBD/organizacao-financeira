@@ -8,7 +8,7 @@ import { ExportButton } from '@/components/reports/ExportButton';
 import { FileSpreadsheet, Calendar, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 
-type EntityType = 'incomes' | 'expenses' | 'budgets' | 'receivables' | 'categories';
+type EntityType = 'incomes' | 'expenses' | 'categories';
 
 export function ReportsClient() {
   const now = new Date();
@@ -29,16 +29,6 @@ export function ReportsClient() {
       value: 'expenses',
       label: 'Despesas',
       description: 'Exportar despesas do período selecionado',
-    },
-    {
-      value: 'budgets',
-      label: 'Orçamentos',
-      description: 'Exportar orçamentos com gastos reais',
-    },
-    {
-      value: 'receivables',
-      label: 'Recebíveis',
-      description: 'Exportar valores a receber',
     },
     {
       value: 'categories',

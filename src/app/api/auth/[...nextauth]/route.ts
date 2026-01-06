@@ -30,9 +30,6 @@ export const authOptions: AuthOptions = {
           where: {
             email: credentials.email,
           },
-          include: {
-            family: true,
-          },
         });
 
         if (!user || !user.password) {
@@ -50,7 +47,6 @@ export const authOptions: AuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          familyId: user.familyId,
         };
       },
     }),
@@ -60,7 +56,6 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as SessionUser).role;
-        token.familyId = (user as SessionUser).familyId;
       }
       return token;
     },
@@ -68,7 +63,6 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         (session.user as SessionUser).id = token.id as string;
         (session.user as SessionUser).role = token.role as 'ADMIN' | 'MEMBER';
-        (session.user as SessionUser).familyId = token.familyId as string;
       }
       return session;
     },

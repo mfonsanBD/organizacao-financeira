@@ -6,7 +6,7 @@ import { signUpSchema, SignUpInput } from '@/lib/validations/auth';
 import { revalidatePath } from 'next/cache';
 
 /**
- * Register new user and create family
+ * Register new user
  */
 export async function register(data: SignUpInput) {
   try {
@@ -28,27 +28,14 @@ export async function register(data: SignUpInput) {
     // Hash password
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
 
-    // Create family and user in transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create family
-      const family = await tx.family.create({
-        data: {
-          name: validatedData.familyName,
-        },
-      });
-
-      // Create user as ADMIN of the family
-      const user = await tx.user.create({
-        data: {
-          name: validatedData.name,
-          email: validatedData.email,
-          password: hashedPassword,
-          role: 'ADMIN',
-          familyId: family.id,
-        },
-      });
-
-      return { family, user };
+    // Create user as ADMIN
+    const user = await prisma.user.create({
+      data: {
+        name: validatedData.name,
+        email: validatedData.email,
+        password: hashedPassword,
+        role: 'ADMIN',
+      },
     });
 
     revalidatePath('/');
@@ -56,8 +43,7 @@ export async function register(data: SignUpInput) {
     return {
       success: true,
       data: {
-        userId: result.user.id,
-        familyId: result.family.id,
+        userId: user.id,
       },
     };
   } catch (error) {
@@ -76,9 +62,6 @@ export async function getUserProfile(userId: string) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        family: true,
-      },
     });
 
     if (!user) {

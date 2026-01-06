@@ -121,7 +121,7 @@ export function useOfflineExpenses() {
  * Hook to get offline data from IndexedDB
  */
 export function useOfflineData<T>(
-  tableName: 'incomes' | 'expenses' | 'categories' | 'budgets' | 'receivables',
+  tableName: 'incomes' | 'expenses' | 'categories',
   filter?: (item: T) => boolean,
 ) {
   const [data, setData] = useState<T[]>([]);
@@ -179,8 +179,6 @@ export function useUnsyncedCount() {
           db.incomes.where('synced').equals(0).count(),
           db.expenses.where('synced').equals(0).count(),
           db.categories.where('synced').equals(0).count(),
-          db.budgets.where('synced').equals(0).count(),
-          db.receivables.where('synced').equals(0).count(),
         ]);
 
         setCount(counts.reduce((sum, c) => sum + c, 0));
@@ -209,12 +207,10 @@ export function useSync() {
   const sync = useMutation({
     mutationFn: async () => {
       // Get all unsynced records
-      const [incomes, expenses, categories, budgets, receivables] = await Promise.all([
+      const [incomes, expenses, categories] = await Promise.all([
         db.incomes.where('synced').equals(0).toArray(),
         db.expenses.where('synced').equals(0).toArray(),
         db.categories.where('synced').equals(0).toArray(),
-        db.budgets.where('synced').equals(0).toArray(),
-        db.receivables.where('synced').equals(0).toArray(),
       ]);
 
       // Sync each type
@@ -247,26 +243,6 @@ export function useSync() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(category),
           }).then(() => db.categories.update(category.id, { synced: true })),
-        );
-      }
-
-      for (const budget of budgets) {
-        syncPromises.push(
-          fetch('/api/budgets/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(budget),
-          }).then(() => db.budgets.update(budget.id, { synced: true })),
-        );
-      }
-
-      for (const receivable of receivables) {
-        syncPromises.push(
-          fetch('/api/receivables/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(receivable),
-          }).then(() => db.receivables.update(receivable.id, { synced: true })),
         );
       }
 

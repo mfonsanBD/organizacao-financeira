@@ -40,11 +40,11 @@ interface ExpenseFormProps {
     categoryId: string;
     paymentDate: Date;
     isRecurring: boolean;
-    recurrence?: 'MONTHLY' | 'YEARLY' | 'CUSTOM' | null;
   };
+  onSuccess?: () => void;
 }
 
-export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
+export function ExpenseForm({ open, onOpenChange, expense, onSuccess }: ExpenseFormProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
@@ -54,16 +54,12 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
     formState: { errors, isSubmitting },
     reset,
     setValue,
-    watch,
   } = useForm({
     resolver: zodResolver(createExpenseSchema),
     defaultValues: {
       isRecurring: false,
     },
   });
-
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const isRecurring = watch('isRecurring');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -87,7 +83,6 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
           categoryId: expense.categoryId,
           paymentDate: expense.paymentDate,
           isRecurring: expense.isRecurring,
-          recurrence: expense.recurrence ?? undefined,
         });
       } else {
         reset({
@@ -96,7 +91,6 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
           categoryId: '',
           paymentDate: new Date(),
           isRecurring: false,
-          recurrence: undefined,
         });
       }
     }
@@ -116,6 +110,7 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
       toast.success(expense ? 'Despesa atualizada com sucesso!' : 'Despesa criada com sucesso!');
       reset();
       onOpenChange(false);
+      onSuccess?.();
       router.refresh();
     } catch (error) {
       toast.error('Erro ao salvar despesa');
@@ -210,30 +205,6 @@ export function ExpenseForm({ open, onOpenChange, expense }: ExpenseFormProps) {
             <p className="text-xs text-muted-foreground ml-6">
               Marque para despesas que se repetem regularmente (ex: luz, água, internet, aluguel). O valor pode variar a cada mês.
             </p>
-
-            {isRecurring && (
-              <div className="space-y-2 ml-6 mt-3">
-                <Label htmlFor="recurrence">Frequência</Label>
-                <Select
-                  onValueChange={(value) =>
-                    setValue('recurrence', value as 'MONTHLY' | 'YEARLY' | 'CUSTOM')
-                  }
-                  defaultValue={expense?.recurrence || undefined}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a frequência" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MONTHLY">Mensal</SelectItem>
-                    <SelectItem value="YEARLY">Anual</SelectItem>
-                    <SelectItem value="CUSTOM">Personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.recurrence && (
-                  <p className="text-sm text-red-600">{errors.recurrence.message}</p>
-                )}
-              </div>
-            )}
           </div>
 
           <DialogFooter>

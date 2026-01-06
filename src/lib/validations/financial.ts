@@ -4,8 +4,7 @@ import { z } from 'zod';
 export const createIncomeSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
   amount: z.number().positive('Valor deve ser positivo'),
-  dueDate: z.number().min(1).max(31, 'Dia deve estar entre 1 e 31'),
-  isActive: z.boolean().optional().default(true),
+  paymentData: z.date(),
 });
 
 export const updateIncomeSchema = createIncomeSchema.partial();
@@ -20,7 +19,6 @@ export const createExpenseSchema = z.object({
   categoryId: z.string().min(1, 'Categoria é obrigatória'),
   paymentDate: z.date(),
   isRecurring: z.boolean().optional().default(false),
-  recurrence: z.enum(['MONTHLY', 'YEARLY', 'CUSTOM']).optional(),
 });
 
 export const updateExpenseSchema = createExpenseSchema.partial();

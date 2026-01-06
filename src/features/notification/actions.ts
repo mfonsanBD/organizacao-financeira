@@ -11,17 +11,16 @@ export interface CreateNotificationInput {
 }
 
 /**
- * Create notification for all users in the family
+ * Create notification for all users
  * Used after important actions (create income, expense, etc.)
  */
 export async function createNotificationForFamily(data: CreateNotificationInput) {
   try {
     const user = await requireAuth();
 
-    // Get all users from the same family (except the current user)
+    // Get all users (except the current user)
     const familyUsers = await prisma.user.findMany({
       where: {
-        familyId: user.familyId,
         id: { not: user.id }, // Don't notify the user who made the action
       },
       select: {
@@ -33,11 +32,10 @@ export async function createNotificationForFamily(data: CreateNotificationInput)
       return { success: true, data: [] };
     }
 
-    // Create notifications for all family members
+    // Create notifications for all users
     const notifications = await prisma.notification.createMany({
       data: familyUsers.map((familyUser) => ({
         userId: familyUser.id,
-        familyId: user.familyId,
         title: data.title,
         message: data.message,
         link: data.link,

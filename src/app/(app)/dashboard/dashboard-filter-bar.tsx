@@ -12,9 +12,6 @@ function ClientOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
-import { endOfDay, endOfMonth, endOfWeek, endOfYear, startOfDay, startOfMonth, startOfWeek, startOfYear } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
@@ -37,27 +34,41 @@ type Props = {
 };
 
 function computePresetRange(preset: Preset, anchorDate: Date): { from: Date; to: Date } {
-  const anchor = startOfDay(anchorDate);
+  // Usar UTC para evitar problemas de timezone
+  const year = anchorDate.getUTCFullYear();
+  const month = anchorDate.getUTCMonth();
+  const day = anchorDate.getUTCDate();
 
   switch (preset) {
     case 'day': {
-      return { from: startOfDay(anchor), to: endOfDay(anchor) };
+      return {
+        from: new Date(Date.UTC(year, month, day, 0, 0, 0)),
+        to: new Date(Date.UTC(year, month, day, 23, 59, 59)),
+      };
     }
     case 'week': {
       // pt-BR (Brasil): semana iniciando no domingo
-      const from = startOfWeek(anchor, { weekStartsOn: 0 });
-      const to = endOfWeek(anchor, { weekStartsOn: 0 });
-      return { from: startOfDay(from), to: endOfDay(to) };
+      const anchor = new Date(Date.UTC(year, month, day));
+      const dayOfWeek = anchor.getUTCDay();
+      const startDay = day - dayOfWeek;
+      const endDay = startDay + 6;
+      
+      return {
+        from: new Date(Date.UTC(year, month, startDay, 0, 0, 0)),
+        to: new Date(Date.UTC(year, month, endDay, 23, 59, 59)),
+      };
     }
     case 'month': {
-      const from = startOfMonth(anchor);
-      const to = endOfMonth(anchor);
-      return { from: startOfDay(from), to: endOfDay(to) };
+      return {
+        from: new Date(Date.UTC(year, month, 1, 0, 0, 0)),
+        to: new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)),
+      };
     }
     case 'year': {
-      const from = startOfYear(anchor);
-      const to = endOfYear(anchor);
-      return { from: startOfDay(from), to: endOfDay(to) };
+      return {
+        from: new Date(Date.UTC(year, 0, 1, 0, 0, 0)),
+        to: new Date(Date.UTC(year, 11, 31, 23, 59, 59)),
+      };
     }
   }
 }
@@ -65,11 +76,20 @@ function computePresetRange(preset: Preset, anchorDate: Date): { from: Date; to:
 export function DashboardFilterBar({ value, onChange, onApply, disabled }: Props) {
   const { preset, range } = value;
 
+  const formatDateUTC = (date: Date) => {
+    return date.toLocaleDateString('pt-BR', { 
+      timeZone: 'UTC',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   const label = (() => {
     if (!range?.from) return 'Selecionar período';
-    if (!range.to) return format(range.from, 'dd MMM yyyy', { locale: ptBR });
+    if (!range.to) return formatDateUTC(range.from);
 
-    return `${format(range.from, 'dd MMM yyyy', { locale: ptBR })} - ${format(range.to, 'dd MMM yyyy', { locale: ptBR })}`;
+    return `${formatDateUTC(range.from)} - ${formatDateUTC(range.to)}`;
   })();
 
   const handlePresetChange = (next: string) => {
@@ -94,9 +114,17 @@ export function DashboardFilterBar({ value, onChange, onApply, disabled }: Props
     onChange({ preset, range: normalized });
 
     if (normalized.from && normalized.to) {
+      // Usar UTC para garantir consistência
+      const fromYear = normalized.from.getFullYear();
+      const fromMonth = normalized.from.getMonth();
+      const fromDay = normalized.from.getDate();
+      const toYear = normalized.to.getFullYear();
+      const toMonth = normalized.to.getMonth();
+      const toDay = normalized.to.getDate();
+      
       onApply({
-        from: startOfDay(normalized.from),
-        to: endOfDay(normalized.to),
+        from: new Date(Date.UTC(fromYear, fromMonth, fromDay, 0, 0, 0)),
+        to: new Date(Date.UTC(toYear, toMonth, toDay, 23, 59, 59)),
       });
     }
   };
@@ -129,7 +157,7 @@ export function DashboardFilterBar({ value, onChange, onApply, disabled }: Props
             <Button
               variant="outline"
               className={cn(
-                'w-full justify-start text-left font-normal sm:w-65',
+                'w-fit h-12 justify-start text-left font-normal',
                 !range?.from && 'text-muted-foreground'
               )}
               disabled={disabled}
@@ -144,8 +172,11 @@ export function DashboardFilterBar({ value, onChange, onApply, disabled }: Props
             mode="range"
             numberOfMonths={2}
             showOutsideDays={false}
-            defaultMonth={range?.from}
-            selected={range}
+            defaultMonth={range?.from ? new Date(range.from.getUTCFullYear(), range.from.getUTCMonth(), range.from.getUTCDate()) : undefined}
+            selected={range?.from && range?.to ? {
+              from: new Date(range.from.getUTCFullYear(), range.from.getUTCMonth(), range.from.getUTCDate()),
+              to: new Date(range.to.getUTCFullYear(), range.to.getUTCMonth(), range.to.getUTCDate())
+            } : undefined}
             onSelect={handleRangeSelect}
             initialFocus
           />

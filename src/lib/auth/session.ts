@@ -42,14 +42,3 @@ export async function requireAdmin(): Promise<SessionUser> {
   }
   return user;
 }
-
-/**
- * Check if user belongs to the specified family
- */
-export async function requireFamilyAccess(familyId: string): Promise<SessionUser> {
-  const user = await requireAuth();
-  if (user.familyId !== familyId) {
-    throw new Error('Acesso negado: família diferente');
-  }
-  return user;
-}

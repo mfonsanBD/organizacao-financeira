@@ -29,12 +29,12 @@ interface IncomeFormProps {
     id: string;
     description: string;
     amount: number;
-    dueDate: number;
-    isActive: boolean;
+    paymentData: Date;
   };
+  onSuccess?: () => void;
 }
 
-export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
+export function IncomeForm({ open, onOpenChange, income, onSuccess }: IncomeFormProps) {
   const router = useRouter();
 
   const {
@@ -42,13 +42,13 @@ export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    setValue,
   } = useForm({
     resolver: zodResolver(createIncomeSchema),
     defaultValues: {
       description: '',
       amount: 0,
-      dueDate: 1,
-      isActive: true,
+      paymentData: new Date(),
     },
   });
 
@@ -56,26 +56,30 @@ export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
   useEffect(() => {
     if (open) {
       if (income) {
+        const dateStr = income.paymentData instanceof Date 
+          ? income.paymentData.toISOString().split('T')[0]
+          : new Date(income.paymentData).toISOString().split('T')[0];
+        
         reset({
           description: income.description,
           amount: income.amount,
-          dueDate: income.dueDate,
-          isActive: income.isActive,
         });
+        // Set date separately as string for proper display in date input
+        setValue('paymentData', dateStr as any);
       } else {
+        const today = new Date().toISOString().split('T')[0];
         reset({
           description: '',
           amount: 0,
-          dueDate: 1,
-          isActive: true,
         });
+        setValue('paymentData', today as any);
       }
     }
-  }, [income, open, reset]);
+  }, [income, open, reset, setValue]);
 
   const onSubmit = async (data: IncomeFormData) => {
     try {
-      const result = income
+      const result = income && income.id
         ? await updateIncome(income.id, data)
         : await createIncome(data);
 
@@ -84,9 +88,10 @@ export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
         return;
       }
 
-      toast.success(income ? 'Renda atualizada com sucesso!' : 'Renda criada com sucesso!');
+      toast.success(income && income.id ? 'Renda atualizada com sucesso!' : 'Renda criada com sucesso!');
       reset();
       onOpenChange(false);
+      onSuccess?.();
       router.refresh();
     } catch (error) {
       toast.error('Erro ao salvar renda');
@@ -98,9 +103,9 @@ export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
-          <DialogTitle>{income ? 'Editar Renda' : 'Nova Renda'}</DialogTitle>
+          <DialogTitle>{income && income.id ? 'Editar Renda' : 'Nova Renda'}</DialogTitle>
           <DialogDescription>
-            {income
+            {income && income.id
               ? 'Atualize as informações da sua renda mensal.'
               : 'Adicione uma nova fonte de renda mensal.'}
           </DialogDescription>
@@ -131,28 +136,15 @@ export function IncomeForm({ open, onOpenChange, income }: IncomeFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="dueDate">Dia do Recebimento</Label>
+            <Label htmlFor="paymentData">Dia do Recebimento</Label>
             <Input
-              id="dueDate"
-              type="number"
-              min="1"
-              max="31"
-              placeholder="1-31"
-              {...register('dueDate', { valueAsNumber: true })}
+              id="paymentData"
+              type="date"
+              {...register('paymentData', { 
+                setValueAs: (value) => value ? new Date(value) : new Date() 
+              })}
             />
-            {errors.dueDate && <p className="text-sm text-red-600">{errors.dueDate.message}</p>}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input
-              id="isActive"
-              type="checkbox"
-              className="rounded border-gray-300"
-              {...register('isActive')}
-            />
-            <Label htmlFor="isActive" className="font-normal cursor-pointer">
-              Renda ativa
-            </Label>
+            {errors.paymentData && <p className="text-sm text-red-600">{errors.paymentData.message}</p>}
           </div>
 
           <DialogFooter>

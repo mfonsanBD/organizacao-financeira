@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth/session';
 
 /**
  * GET /api/sync
@@ -8,31 +7,15 @@ import { requireAuth } from '@/lib/auth/session';
  */
 export async function GET() {
   try {
-    const user = await requireAuth();
-    const familyId = user.familyId;
-
-    // Get all data for the family
-    const [incomes, expenses, categories, budgets, receivables] = await Promise.all([
+    const [incomes, expenses, categories] = await Promise.all([
       prisma.income.findMany({
-        where: { familyId },
         orderBy: { updatedAt: 'desc' },
       }),
       prisma.expense.findMany({
-        where: { familyId },
         include: { category: true },
         orderBy: { updatedAt: 'desc' },
       }),
       prisma.category.findMany({
-        where: { familyId },
-        orderBy: { updatedAt: 'desc' },
-      }),
-      prisma.budget.findMany({
-        where: { familyId },
-        include: { category: true },
-        orderBy: { updatedAt: 'desc' },
-      }),
-      prisma.receivable.findMany({
-        where: { familyId },
         orderBy: { updatedAt: 'desc' },
       }),
     ]);
@@ -41,8 +24,6 @@ export async function GET() {
       incomes,
       expenses,
       categories,
-      budgets,
-      receivables,
       lastSync: new Date().toISOString(),
     });
   } catch (error) {
